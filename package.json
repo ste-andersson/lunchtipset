@@ -1,0 +1,25 @@
+{
+  "name": "lunchtipset",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "postinstall": "npm --prefix api install && npm --prefix web install",
+    "dev": "concurrently -n api,web -c blue,green \"npm --prefix api run dev\" \"npm --prefix web run dev\"",
+    "build": "npm --prefix web run build",
+    "start": "npm --prefix api run start",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "tsc -p shared && npm --prefix api run typecheck && npm --prefix web run typecheck",
+    "test": "vitest run",
+    "db:generate": "npm --prefix api run db:generate"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.4",
+    "concurrently": "^9.2.1",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.10"
+  }
+}

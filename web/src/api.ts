@@ -1,0 +1,104 @@
+import type {
+  Assistant,
+  Me,
+  MealLog,
+  MenuDay,
+  MenuFetchLog,
+  Preferences,
+  RecentMeal,
+  Restaurant,
+  Sentiment,
+  TasteMap,
+  TodayResponse,
+  UrlSuggestion,
+} from '@lunch/shared'
+
+type GetToken = () => Promise<string | null>
+
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
+    super(message)
+  }
+}
+
+async function request<T>(
+  getToken: GetToken,
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const token = await getToken()
+  const headers: Record<string, string> = {}
+  if (token) headers.Authorization = `Bearer ${token}`
+  let payload: BodyInit | undefined
+  if (body instanceof FormData) payload = body
+  else if (body !== undefined) {
+    headers['Content-Type'] = 'application/json'
+    payload = JSON.stringify(body)
+  }
+  const res = await fetch(`/api${path}`, { method, headers, body: payload })
+  if (!res.ok) {
+    const err = (await res.json().catch(() => null)) as { error?: string } | null
+    throw new ApiError(res.status, err?.error ?? res.statusText)
+  }
+  return res.json() as Promise<T>
+}
+
+export type RestaurantInput = Omit<Restaurant, 'id'>
+
+export function createApi(getToken: GetToken) {
+  const get = <T>(p: string) => request<T>(getToken, 'GET', p)
+  const send = <T>(m: string, p: string, b?: unknown) => request<T>(getToken, m, p, b)
+  return {
+    me: () => get<Me | null>('/me'),
+    today: (date?: string) => get<TodayResponse>(`/today${date ? `?date=${date}` : ''}`),
+    taste: (date: string, freeText: string, meals: RecentMeal[]) =>
+      send<TasteMap>('POST', '/taste', { date, freeText, meals }),
+    restaurants: () => get<Restaurant[]>('/restaurants'),
+    assistants: () => get<Assistant[]>('/assistants'),
+    signedUrl: (assistantId: string) =>
+      send<{ signedUrl: string }>('POST', '/conversation/signed-url', { assistantId }),
+
+    getPreferences: () => get<Preferences | null>('/me/preferences'),
+    putPreferences: (p: Preferences) => send<Preferences>('PUT', '/me/preferences', p),
+    getMeals: () => get<MealLog[]>('/me/meals'),
+    putMeals: (m: MealLog | MealLog[]) => send('PUT', '/me/meals', m),
+    deleteMeal: (id: string) => send('DELETE', `/me/meals/${encodeURIComponent(id)}`),
+
+    addNote: (
+      restaurantId: number,
+      note: { sentiment: Sentiment; text: string; source?: 'user' | 'assistant' },
+    ) => send('POST', `/restaurants/${restaurantId}/notes`, note),
+    suggestUrl: (s: {
+      restaurantId: number | null
+      restaurantName: string | null
+      url: string
+      comment: string | null
+    }) => send('POST', '/url-suggestions', s),
+    parseMenu: (form: FormData) => send<{ days: MenuDay[] }>('POST', '/menus/parse', form),
+    publishMenu: (restaurantId: number, days: MenuDay[]) =>
+      send('POST', '/menus/publish', { restaurantId, days }),
+
+    admin: {
+      restaurants: () => get<Restaurant[]>('/admin/restaurants'),
+      createRestaurant: (r: RestaurantInput) => send<Restaurant>('POST', '/admin/restaurants', r),
+      updateRestaurant: (id: number, r: RestaurantInput) =>
+        send<Restaurant>('PUT', `/admin/restaurants/${id}`, r),
+      deleteRestaurant: (id: number) => send('DELETE', `/admin/restaurants/${id}`),
+      urlSuggestions: () => get<UrlSuggestion[]>('/admin/url-suggestions'),
+      setSuggestionStatus: (id: number, status: 'accepted' | 'rejected') =>
+        send('PUT', `/admin/url-suggestions/${id}`, { status }),
+      fetchLog: () => get<MenuFetchLog[]>('/admin/fetch-log'),
+      fetchMenus: (restaurantId?: number) =>
+        send<{ id: number; name: string; status: string; itemCount: number; message?: string }[]>(
+          'POST',
+          `/admin/fetch-menus${restaurantId ? `?restaurantId=${restaurantId}` : ''}`,
+        ),
+    },
+  }
+}
+
+export type Api = ReturnType<typeof createApi>
