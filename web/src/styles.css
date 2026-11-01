@@ -1093,23 +1093,21 @@ input[type="file"] {
   font-family: var(--font-head);
   font-size: 1.15rem;
 }
-.contact__lang {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--denim);
-  border: 1.5px solid var(--denim);
-  border-radius: 6px;
-  padding: 0 5px;
-}
+/* Light round button with a green handset */
 .contact__call {
+  flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 2px solid var(--ink);
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border);
   border-radius: 50%;
-  background: var(--leaf);
-  box-shadow: 1.5px 1.5px 0 var(--ink);
+  background: var(--surface);
+  color: var(--leaf);
+  box-shadow: 0 3px 0 var(--soft-shadow);
+}
+.contact:hover .contact__call {
+  background: var(--leaf-soft);
 }
 
 .avatar {

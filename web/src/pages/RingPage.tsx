@@ -20,9 +20,16 @@ export function RingPage() {
               <strong>{a.name}</strong>
               <span className="muted small">{a.tagline}</span>
             </div>
-            <span className="contact__lang">{a.language.toUpperCase()}</span>
             <span className="contact__call" aria-hidden>
-              📞
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z" />
+              </svg>
             </span>
           </Link>
         ))}
