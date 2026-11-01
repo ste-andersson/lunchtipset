@@ -2,34 +2,25 @@ import {
   directionsUrl,
   type MenuItem,
   rankRestaurants,
+  type SentimentCounts,
   type Suggestion,
   type TodayRestaurant,
 } from '@lunch/shared'
-import { useMemo, useState } from 'react'
+import { Fragment, type ReactNode, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { MealForm } from '../components/MealForm.tsx'
-import { NoteForm } from '../components/NoteForm.tsx'
-import {
-  AuthorAvatar,
-  ColleagueBadge,
-  formatDistance,
-  Notice,
-  SENTIMENT_ICON,
-  Sheet,
-  SignInPrompt,
-} from '../components/ui.tsx'
+import { AuthorAvatar, formatDistance, Notice, SENTIMENT_ICON, Sheet } from '../components/ui.tsx'
 import { useTaste, useToday, useUserData } from '../data.ts'
 
 const TOP_SUGGESTIONS = 3
 
 export function TodayPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const today = useToday()
   const user = useUserData()
   const [showAll, setShowAll] = useState(false)
   const [eating, setEating] = useState<TodayRestaurant | null>(null)
-  const [noting, setNoting] = useState<TodayRestaurant | null>(null)
 
   const taste = useTaste(today.data?.date, user.prefs.freeText, user.meals)
   const ranked = useMemo(
@@ -54,58 +45,42 @@ export function TodayPage() {
   const restaurants = today.data.restaurants.filter((r) => showAll || visibleIds.has(r.id))
   const hidden = today.data.restaurants.length - visibleIds.size
   const eatenToday = user.meals.find((m) => m.date === today.data.date)
-  const dateLabel = new Date(`${today.data.date}T12:00:00`).toLocaleDateString(i18n.language, {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
 
   return (
     <div className="stack">
-      <section className="hero">
-        <p className="hero__date">{dateLabel}</p>
-        {eatenToday && <p>{t('today.eatenAt', { place: eatenToday.restaurantName })}</p>}
-      </section>
-
       {today.data.restaurants.length === 0 ? (
         <Notice>{t('today.noRestaurants')}</Notice>
       ) : (
         <>
           {ranked.length > 0 && (
-            <section>
-              <h2 className="section-title">{t('today.suggestions')}</h2>
-              <ol className="suggestions">
-                {ranked.slice(0, TOP_SUGGESTIONS).map((s, i) => (
-                  <SuggestionCard key={s.restaurant.id} s={s} rank={i + 1} />
-                ))}
-              </ol>
-            </section>
+            <Chalkboard suggestions={ranked.slice(0, TOP_SUGGESTIONS)}>
+              {eatenToday && (
+                <p className="chalkboard__note">
+                  {t('today.eatenAt', { place: eatenToday.restaurantName })}
+                </p>
+              )}
+            </Chalkboard>
           )}
 
-          <section>
-            <div className="section-head">
-              <h2 className="section-title">{t('today.allRestaurants')}</h2>
-              {hidden > 0 && (
-                <button
-                  type="button"
-                  className="btn btn--ghost btn--small"
-                  onClick={() => setShowAll((v) => !v)}
-                >
-                  {showAll ? t('today.hideFiltered') : t('today.showFiltered', { count: hidden })}
-                </button>
-              )}
-            </div>
-            <div className="cards">
-              {restaurants.map((r) => (
-                <RestaurantCard
-                  key={r.id}
-                  r={r}
-                  filtered={!visibleIds.has(r.id)}
-                  onEat={() => setEating(r)}
-                  onNote={() => setNoting(r)}
-                />
-              ))}
-            </div>
+          <section className="stack">
+            <h2 className="menu-heading">{t('today.allRestaurants')}</h2>
+            {restaurants.map((r) => (
+              <RestaurantCard
+                key={r.id}
+                r={r}
+                filtered={!visibleIds.has(r.id)}
+                onEat={() => setEating(r)}
+              />
+            ))}
+            {hidden > 0 && (
+              <button
+                type="button"
+                className="text-link center"
+                onClick={() => setShowAll((v) => !v)}
+              >
+                {showAll ? t('today.hideFiltered') : t('today.showFiltered', { count: hidden })}
+              </button>
+            )}
           </section>
         </>
       )}
@@ -122,115 +97,118 @@ export function TodayPage() {
           />
         )}
       </Sheet>
-
-      <Sheet
-        open={!!noting}
-        onClose={() => setNoting(null)}
-        title={t('note.title', { name: noting?.name ?? '' })}
-      >
-        {noting &&
-          (user.isSignedIn ? (
-            <NoteForm restaurantId={noting.id} onDone={() => setNoting(null)} />
-          ) : (
-            <SignInPrompt text={t('note.signInNeeded')} />
-          ))}
-      </Sheet>
     </div>
   )
 }
 
-function SuggestionCard({ s, rank }: { s: Suggestion; rank: number }) {
+/** "Dagens förslag" written in chalk: dish and price, then where and why. */
+function Chalkboard({
+  suggestions,
+  children,
+}: {
+  suggestions: Suggestion[]
+  children?: ReactNode
+}) {
   const { t } = useTranslation()
   return (
-    <li className="suggestion">
-      <span className="suggestion__rank">{rank}</span>
-      <div className="suggestion__body">
-        <div className="suggestion__head">
-          <strong>{s.restaurant.name}</strong>
-          <span className="suggestion__score" title={t('today.scoreTitle')}>
-            {s.score}
-          </span>
-        </div>
-        {s.item && <p className="suggestion__dish">{s.item.title}</p>}
-        <p className="reasons">
-          {s.pros.slice(0, 3).map((k) => (
-            <span key={k} className="reason reason--pro">
-              {t(`reasons.pro.${k}`)}
-            </span>
-          ))}
-          {s.cons.slice(0, 2).map((k) => (
-            <span key={k} className="reason reason--con">
-              {t(`reasons.con.${k}`)}
-            </span>
-          ))}
-          <span className="reason">{formatDistance(s.restaurant.distanceMeters)}</span>
-        </p>
-      </div>
-    </li>
+    <section className="chalkboard">
+      <h2 className="chalkboard__title">{t('today.suggestions')}</h2>
+      {suggestions.map((s) => {
+        const why = s.pros[0] ? t(`reasons.pro.${s.pros[0]}`).toLowerCase() : null
+        return (
+          <div key={s.restaurant.id} className="chalkboard__row">
+            <p className="chalkboard__dish">
+              <span>{s.item?.title ?? s.restaurant.name}</span>
+              {s.item?.priceSek != null && <span>{s.item.priceSek}:-</span>}
+            </p>
+            <p className="chalkboard__where">
+              {s.item && `${s.restaurant.name}, `}
+              {formatDistance(s.restaurant.distanceMeters)}
+              {why && ` – ${why}`}
+            </p>
+          </div>
+        )
+      })}
+      {children}
+    </section>
   )
+}
+
+function colleagueLine(c: SentimentCounts): string | null {
+  const total = c.positive + c.neutral + c.negative
+  if (total === 0) return null
+  if (c.positive >= 2 * Math.max(c.negative, 1)) return 'today.colleaguesLike'
+  if (c.negative >= 2 * Math.max(c.positive, 1)) return 'today.colleaguesDislike'
+  return 'today.colleaguesMixed'
 }
 
 function RestaurantCard({
   r,
   filtered,
   onEat,
-  onNote,
 }: {
   r: TodayRestaurant
   filtered: boolean
   onEat: () => void
-  onNote: () => void
 }) {
   const { t } = useTranslation()
   const daily = r.items.filter((i) => !i.fixed)
   const fixed = r.items.filter((i) => i.fixed)
+  const opinion = colleagueLine(r.colleagues)
+  const subtitle = [r.category?.toLowerCase(), formatDistance(r.distanceMeters)]
+    .filter(Boolean)
+    .join(' · ')
+
+  if (daily.length === 0 && fixed.length === 0) {
+    const failed = r.lastFetch?.status === 'error' || r.lastFetch?.status === 'empty'
+    return (
+      <article className={`menu-card menu-card--empty ${filtered ? 'is-filtered' : ''}`}>
+        <h3 className="menu-card__name">{r.name}</h3>
+        <p className="menu-card__sub">
+          {failed ? t('today.fetchFailed') : t('today.noMenuYet')}{' '}
+          <Link to={`/installningar/bidra?restaurant=${r.id}`}>{t('today.photoIt')}</Link>{' '}
+          {t('today.or')}{' '}
+          <Link to={`/installningar/bidra?restaurant=${r.id}`}>{t('today.typeIt')}</Link>
+        </p>
+        <CardLinks r={r} onEat={onEat} canEditMenu={false} />
+      </article>
+    )
+  }
+
   return (
-    <article className={`card ${filtered ? 'card--muted' : ''}`}>
-      <header className="card__head">
-        <div>
-          <h3>{r.name}</h3>
-          <p className="muted small">
-            {formatDistance(r.distanceMeters)}
-            {r.category && ` · ${r.category}`}
-          </p>
-        </div>
-        <ColleagueBadge counts={r.colleagues} />
+    <article className={`menu-card ${filtered ? 'is-filtered' : ''}`}>
+      <header className="menu-card__head">
+        <h3 className="menu-card__name">{r.name}</h3>
+        <p className="menu-card__sub">{subtitle}</p>
       </header>
 
       {daily.length > 0 ? (
         <MenuList items={daily} />
       ) : (
-        fixed.length === 0 && (
-          <p className="muted small">
-            {r.lastFetch?.status === 'error' || r.lastFetch?.status === 'empty'
-              ? t('today.fetchFailed')
-              : t('today.noMenu')}{' '}
-            <Link to={`/installningar/bidra?restaurant=${r.id}`}>{t('today.uploadMenu')}</Link>{' '}
-            {t('today.or')}{' '}
-            <Link to={`/installningar/bidra?restaurant=${r.id}&mode=text`}>
-              {t('today.writeMenu')}
-            </Link>
-          </p>
-        )
+        <>
+          <p className="menu-card__sub">{t('today.fixedMenuOnly')}</p>
+          <MenuList items={fixed} />
+        </>
       )}
-      {fixed.length > 0 &&
-        (daily.length > 0 ? (
-          <details className="fixed-menu">
-            <summary>{t('today.fixedMenu', { count: fixed.length })}</summary>
-            <MenuList items={fixed} />
-          </details>
-        ) : (
-          <div className="fixed-menu">
-            <p className="muted small">{t('today.fixedMenuOnly')}</p>
-            <MenuList items={fixed} />
-          </div>
-        ))}
-      {r.menuSource === 'upload' && <p className="muted small">{t('today.fromUpload')}</p>}
+      {daily.length > 0 && fixed.length > 0 && (
+        <>
+          <p className="menu-card__section">{t('today.fixedMenuTitle')}</p>
+          <MenuList items={fixed} />
+        </>
+      )}
+
+      {(opinion || r.menuSource === 'upload') && (
+        <p className="menu-card__sub menu-card__note">
+          {opinion && t(opinion)}
+          {opinion && r.menuSource === 'upload' && ' · '}
+          {r.menuSource === 'upload' && t('today.fromUpload')}
+        </p>
+      )}
 
       {r.notes.length > 0 && (
-        <details className="notes">
-          <summary>{t('today.notes', { count: r.notes.length })}</summary>
-          <ul>
+        <details className="menu-card__more">
+          <summary>{t('today.readReviews', { count: r.notes.length })}</summary>
+          <ul className="reviews">
             {r.notes.map((n) => (
               <li key={n.id} className="review">
                 <AuthorAvatar author={n.author} />
@@ -245,56 +223,86 @@ function RestaurantCard({
         </details>
       )}
 
-      <footer className="card__actions">
-        <button type="button" className="btn btn--small" onClick={onEat}>
-          {t('today.ateHere')}
-        </button>
-        <button type="button" className="btn btn--ghost btn--small" onClick={onNote}>
-          {t('today.review')}
-        </button>
-        {daily.length > 0 && (
-          <Link
-            to={`/installningar/bidra?restaurant=${r.id}&mode=text`}
-            className="btn btn--ghost btn--small"
-          >
-            {t('today.editMenu')}
-          </Link>
-        )}
-        {r.address && (
-          <a
-            className="btn btn--ghost btn--small"
-            href={directionsUrl(r.address)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t('today.directions')}
-          </a>
-        )}
-        {(r.menuUrl ?? r.website) && (
-          <a
-            className="btn btn--ghost btn--small"
-            href={r.menuUrl ?? r.website ?? undefined}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t('today.website')}
-          </a>
-        )}
-      </footer>
+      <CardLinks r={r} onEat={onEat} canEditMenu={daily.length > 0} />
     </article>
+  )
+}
+
+/** "Jag åt här · Recensera · …" as a row of plain text links. */
+function CardLinks({
+  r,
+  onEat,
+  canEditMenu,
+}: {
+  r: TodayRestaurant
+  onEat: () => void
+  canEditMenu: boolean
+}) {
+  const { t } = useTranslation()
+  const links: ReactNode[] = [
+    <button key="ate" type="button" className="text-link" onClick={onEat}>
+      {t('today.ateHere')}
+    </button>,
+  ]
+  if (canEditMenu) {
+    links.push(
+      <Link key="edit" className="text-link" to={`/installningar/bidra?restaurant=${r.id}`}>
+        {t('today.editMenu')}
+      </Link>,
+    )
+  }
+  if (r.address) {
+    links.push(
+      <a
+        key="map"
+        className="text-link"
+        href={directionsUrl(r.address)}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {t('today.directions')}
+      </a>,
+    )
+  }
+  const site = r.menuUrl ?? r.website
+  if (site) {
+    links.push(
+      <a key="web" className="text-link" href={site} target="_blank" rel="noreferrer">
+        {t('today.website')}
+      </a>,
+    )
+  }
+  return (
+    <nav className="menu-card__links">
+      {links.map((link, i) => (
+        <Fragment key={(link as { key: string }).key}>
+          {i > 0 && (
+            <span className="menu-card__dot" aria-hidden>
+              ·
+            </span>
+          )}
+          {link}
+        </Fragment>
+      ))}
+    </nav>
   )
 }
 
 function MenuList({ items }: { items: MenuItem[] }) {
   return (
-    <ul className="menu">
+    <ul className="dishes">
       {items.map((item) => (
         <li key={item.title}>
-          <div className="menu__line">
+          <p className="dish">
             <span>{item.title}</span>
-            {item.priceSek != null && <span className="menu__price">{item.priceSek} kr</span>}
-          </div>
-          {item.description && <p className="muted small">{item.description}</p>}
+            {item.priceSek != null && (
+              <>
+                <span className="dish__dots" aria-hidden />
+                <span className="dish__price">{item.priceSek} kr</span>
+              </>
+            )}
+          </p>
+          {item.description && <p className="dish__desc">{item.description}</p>}
         </li>
       ))}
     </ul>

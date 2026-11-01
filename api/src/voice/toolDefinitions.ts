@@ -85,16 +85,6 @@ export const clientTools: ClientToolDefinition[] = [
     },
   },
   {
-    name: 'suggest_menu_url',
-    description: "Suggest a web page with a restaurant's lunch menu. An admin reviews it.",
-    required: ['url'],
-    properties: {
-      url: { type: 'string', description: 'Full url starting with https://' },
-      restaurant_id: restaurantId,
-      restaurant_name: { type: 'string', description: 'Only if the place is not in the list' },
-    },
-  },
-  {
     name: 'add_dish',
     description:
       "Add a dish to a restaurant's lunch menu for today, when the caller tells you what is being served. Call once per dish. Everyone sees the change.",

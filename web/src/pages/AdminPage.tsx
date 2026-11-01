@@ -1,8 +1,9 @@
-import type { Restaurant } from '@lunch/shared'
+import type { AdminRestaurant } from '@lunch/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { RestaurantInput } from '../api.ts'
+import { cleanDishes, DishEditor } from '../components/DishEditor.tsx'
 import { formatDistance, Notice, Sheet } from '../components/ui.tsx'
 import { useApi, useMe } from '../data.ts'
 
@@ -15,7 +16,6 @@ export function AdminPage() {
     <div className="stack">
       <h1>{t('admin.title')}</h1>
       <Restaurants />
-      <Suggestions />
       <FetchLog />
     </div>
   )
@@ -26,7 +26,7 @@ function Restaurants() {
   const api = useApi()
   const qc = useQueryClient()
   const list = useQuery({ queryKey: ['admin', 'restaurants'], queryFn: api.admin.restaurants })
-  const [editing, setEditing] = useState<Restaurant | 'new' | null>(null)
+  const [editing, setEditing] = useState<AdminRestaurant | 'new' | null>(null)
 
   const refresh = () => {
     void qc.invalidateQueries({ queryKey: ['admin'] })
@@ -98,7 +98,13 @@ function Restaurants() {
   )
 }
 
-function RestaurantForm({ initial, onDone }: { initial: Restaurant | null; onDone: () => void }) {
+function RestaurantForm({
+  initial,
+  onDone,
+}: {
+  initial: AdminRestaurant | null
+  onDone: () => void
+}) {
   const { t } = useTranslation()
   const api = useApi()
   const [form, setForm] = useState<RestaurantInput>({
@@ -109,11 +115,11 @@ function RestaurantForm({ initial, onDone }: { initial: Restaurant | null; onDon
     website: initial?.website ?? null,
     category: initial?.category ?? null,
     description: initial?.description ?? null,
-    fixedMenuText: initial?.fixedMenuText ?? null,
+    fixedMenu: initial?.fixedMenu ?? [],
     active: initial?.active ?? true,
   })
   const [error, setError] = useState<string | null>(null)
-  const text = (k: keyof RestaurantInput) => ({
+  const text = (k: 'address' | 'menuUrl' | 'website' | 'category' | 'description') => ({
     value: (form[k] as string | null) ?? '',
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setForm((f) => ({ ...f, [k]: e.target.value.trim() ? e.target.value : null })),
@@ -123,8 +129,9 @@ function RestaurantForm({ initial, onDone }: { initial: Restaurant | null; onDon
     e.preventDefault()
     setError(null)
     try {
-      if (initial) await api.admin.updateRestaurant(initial.id, form)
-      else await api.admin.createRestaurant(form)
+      const body = { ...form, fixedMenu: cleanDishes(form.fixedMenu) }
+      if (initial) await api.admin.updateRestaurant(initial.id, body)
+      else await api.admin.createRestaurant(body)
       onDone()
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
@@ -182,14 +189,14 @@ function RestaurantForm({ initial, onDone }: { initial: Restaurant | null; onDon
           {...text('description')}
         />
       </label>
-      <label className="field">
+      <div className="field">
         <span>{t('admin.fixedMenu')}</span>
-        <textarea
-          rows={4}
-          placeholder={t('admin.fixedMenuPlaceholder')}
-          {...text('fixedMenuText')}
+        <p className="muted small">{t('admin.fixedMenuHint')}</p>
+        <DishEditor
+          items={form.fixedMenu}
+          onChange={(fixedMenu) => setForm((f) => ({ ...f, fixedMenu }))}
         />
-      </label>
+      </div>
       <label className="check">
         <input
           type="checkbox"
@@ -210,68 +217,6 @@ function RestaurantForm({ initial, onDone }: { initial: Restaurant | null; onDon
         </button>
       </div>
     </form>
-  )
-}
-
-function Suggestions() {
-  const { t } = useTranslation()
-  const api = useApi()
-  const qc = useQueryClient()
-  const list = useQuery({ queryKey: ['admin', 'suggestions'], queryFn: api.admin.urlSuggestions })
-  const restaurants = useQuery({
-    queryKey: ['admin', 'restaurants'],
-    queryFn: api.admin.restaurants,
-  })
-  const decide = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: 'accepted' | 'rejected' }) =>
-      api.admin.setSuggestionStatus(id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin'] }),
-  })
-
-  if (!list.data?.length) return null
-  return (
-    <section className="panel">
-      <h2>{t('admin.suggestions')}</h2>
-      <ul className="admin-list">
-        {list.data.map((s) => (
-          <li key={s.id}>
-            <div>
-              <strong>
-                {s.restaurantName ??
-                  restaurants.data?.find((r) => r.id === s.restaurantId)?.name ??
-                  `#${s.restaurantId}`}
-              </strong>
-              {s.restaurantId == null && (
-                <span className="muted small"> · {t('admin.newPlace')}</span>
-              )}
-              <p className="small truncate">
-                <a href={s.url} target="_blank" rel="noreferrer">
-                  {s.url}
-                </a>
-              </p>
-              {s.comment && <p className="muted small">{s.comment}</p>}
-            </div>
-            <div className="admin-list__actions">
-              <button
-                type="button"
-                className="btn btn--small"
-                onClick={() => decide.mutate({ id: s.id, status: 'accepted' })}
-                title={s.restaurantId == null ? t('admin.acceptNewHint') : undefined}
-              >
-                {t('admin.accept')}
-              </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--small"
-                onClick={() => decide.mutate({ id: s.id, status: 'rejected' })}
-              >
-                {t('admin.reject')}
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
   )
 }
 

@@ -67,7 +67,7 @@ IndexedDB, och man kan läsa och ringa men inte bidra.
   och håller uppdaterad vid start, så ElevenLabs GUI behövs inte. Se
   [docs/elevenlabs-agent.md](docs/elevenlabs-agent.md).
 - **Admin**: Clerk-användare i `ADMIN_USER_IDS` kan lägga upp restauranger
-  (avstånd i meter), granska föreslagna webbsidor och starta menyhämtning.
+  (avstånd i meter, meny-URL, fast meny) och starta menyhämtning.
 
 ## Railway
 

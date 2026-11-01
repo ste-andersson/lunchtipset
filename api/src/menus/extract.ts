@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { type MenuDay, type MenuItem, menuDay, workWeek } from '@lunch/shared'
+import { type MenuDay, menuDay, workWeek } from '@lunch/shared'
 import { z } from 'zod'
 import { env } from '../env.ts'
 
@@ -120,76 +120,4 @@ export async function extractMenu(
       })),
     }))
     .filter((d) => d.items.length > 0)
-}
-
-const fixedSchema = z.object({
-  items: z.array(
-    z.object({
-      title: z.string().min(1),
-      description: z.string().nullish(),
-      priceSek: z.number().int().nullish(),
-    }),
-  ),
-})
-
-/** Without Gemini: one dish per line, a trailing "125 kr" becomes the price. */
-function splitLines(text: string): MenuItem[] {
-  return text
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((line) => {
-      const price = line.match(/(\d{2,4})\s*(kr|:-|sek)\b/i)
-      return {
-        title: line.replace(/[\s–-]*\d{2,4}\s*(kr|:-|sek)\b.*$/i, '').trim() || line,
-        description: null,
-        priceSek: price ? Number(price[1]) : null,
-      }
-    })
-}
-
-/**
- * Reads a restaurant's always-available menu, written freely by an admin
- * (e.g. "Pad thai 125, grön curry med kyckling eller tofu 135"), into dishes.
- */
-export async function parseFixedMenu(
-  text: string | null,
-  restaurantName: string,
-): Promise<MenuItem[]> {
-  if (!text?.trim()) return []
-  if (!env.GEMINI_API_KEY) return splitLines(text)
-
-  const res = await gemini().models.generateContent({
-    model: env.GEMINI_MODEL,
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            text: [
-              `This is the fixed lunch menu of "${restaurantName}", served every day, written freely by a colleague.`,
-              'List the dishes. Keep titles in the original language; put sides and details in description; priceSek in SEK if stated.',
-              '',
-              text,
-            ].join('\n'),
-          },
-        ],
-      },
-    ],
-    config: {
-      responseMimeType: 'application/json',
-      responseJsonSchema: {
-        type: 'object',
-        properties: { items: responseSchema.properties.days.items.properties.items },
-        required: ['items'],
-      },
-      temperature: 0.1,
-    },
-  })
-  const parsed = fixedSchema.parse(JSON.parse(res.text ?? '{"items":[]}'))
-  return parsed.items.map((i) => ({
-    title: i.title.trim(),
-    description: i.description?.trim() || null,
-    priceSek: i.priceSek ?? null,
-  }))
 }

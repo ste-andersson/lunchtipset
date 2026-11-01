@@ -4,7 +4,7 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { type AuthVars, requireUser, userIdOf } from '../auth.ts'
 import { db } from '../db/index.ts'
-import { restaurantNotes, urlSuggestions } from '../db/schema.ts'
+import { restaurantNotes } from '../db/schema.ts'
 import { extractMenu, type MenuInput } from '../menus/extract.ts'
 import { saveMenuDays } from '../menus/store.ts'
 import { idParam, parseJson } from './parse.ts'
@@ -35,24 +35,6 @@ contributeRoutes.post('/restaurants/:id/notes', async (c) => {
     .values({ ...body, restaurantId: id, userId: userIdOf(c) })
     .returning({ id: restaurantNotes.id })
   return c.json(row, 201)
-})
-
-contributeRoutes.post('/url-suggestions', async (c) => {
-  const body = await parseJson(
-    c,
-    z
-      .object({
-        restaurantId: z.number().int().nullable(),
-        restaurantName: z.string().trim().max(200).nullable(),
-        url: z.url(),
-        comment: z.string().trim().max(1000).nullable(),
-      })
-      .refine((b) => b.restaurantId != null || !!b.restaurantName, {
-        message: 'Ange restaurang',
-      }),
-  )
-  await db.insert(urlSuggestions).values({ ...body, userId: userIdOf(c) })
-  return c.json({ ok: true }, 201)
 })
 
 /**

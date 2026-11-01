@@ -73,7 +73,7 @@ export function buildSystemPrompt(input: {
   )
   if (!isSignedIn) {
     add(
-      'The caller is not signed in: they can change their own preferences and log meals, but save_restaurant_note, suggest_menu_url, add_dish and remove_dish will fail. Tell them they need to sign in in the app for that.',
+      'The caller is not signed in: they can change their own preferences and log meals, but save_restaurant_note, add_dish and remove_dish will fail. Tell them they need to sign in in the app for that.',
       '',
     )
   }

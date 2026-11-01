@@ -1,41 +1,19 @@
 import type { MenuDay, MenuItem } from '@lunch/shared'
 import { useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'react-router'
+import { blankDish, cleanDishes, DishEditor } from '../components/DishEditor.tsx'
 import { Notice, SignInPrompt } from '../components/ui.tsx'
 import { useApi, useRestaurants, useToday, useUserData } from '../data.ts'
-
-type Tab = 'upload' | 'url'
 
 export function ContributePage() {
   const { t } = useTranslation()
   const user = useUserData()
-  const [tab, setTab] = useState<Tab>('upload')
-
   return (
     <div className="stack">
       <h1>{t('contribute.title')}</h1>
-      <div className="segmented">
-        {(['upload', 'url'] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            aria-pressed={tab === k}
-            className={tab === k ? 'is-on' : ''}
-            onClick={() => setTab(k)}
-          >
-            {t(`contribute.tab.${k}`)}
-          </button>
-        ))}
-      </div>
-      {!user.isSignedIn ? (
-        <SignInPrompt text={t('contribute.signInNeeded')} />
-      ) : tab === 'upload' ? (
-        <UploadMenu />
-      ) : (
-        <SuggestUrl />
-      )}
+      {user.isSignedIn ? <MenuEditor /> : <SignInPrompt text={t('contribute.signInNeeded')} />}
     </div>
   )
 }
@@ -54,219 +32,122 @@ async function shrinkImage(file: File): Promise<Blob> {
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b ?? file), 'image/jpeg', 0.85))
 }
 
-type Step = 'pick' | 'parsing' | 'review' | 'publishing' | 'done'
-
-function UploadMenu() {
+/**
+ * Enter or correct a restaurant's menu by hand. A photo is only a shortcut that
+ * fills in the same fields, which are then checked before publishing.
+ */
+function MenuEditor() {
   const { t, i18n } = useTranslation()
   const api = useApi()
   const qc = useQueryClient()
   const restaurants = useRestaurants()
+  const today = useToday()
   const [params] = useSearchParams()
   const [restaurantId, setRestaurantId] = useState<number | null>(
     params.get('restaurant') ? Number(params.get('restaurant')) : null,
   )
-  const [scope, setScope] = useState<'today' | 'week'>('today')
-  const [mode, setMode] = useState<'photo' | 'text'>(
-    params.get('mode') === 'text' ? 'text' : 'photo',
-  )
-  const [file, setFile] = useState<File | null>(null)
-  const [text, setText] = useState<string | null>(null)
-  const today = useToday()
-  // Start the text from what is on the menu now, so changing it is just editing.
-  const currentMenu =
-    today.data?.restaurants
-      .find((r) => r.id === restaurantId)
-      ?.items.filter((i) => !i.fixed)
-      .map((i) =>
-        [i.title, i.description, i.priceSek ? `${i.priceSek} kr` : null]
-          .filter(Boolean)
-          .join(' – '),
-      )
-      .join('\n') ?? ''
-  const menuText = text ?? currentMenu
-  const ready = mode === 'photo' ? !!file : !!menuText.trim()
-  const [step, setStep] = useState<Step>('pick')
   const [days, setDays] = useState<MenuDay[]>([])
+  const [touched, setTouched] = useState(false)
+  const [photoScope, setPhotoScope] = useState<'today' | 'week'>('today')
+  const [busy, setBusy] = useState<'photo' | 'publish' | null>(null)
+  const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [photoNote, setPhotoNote] = useState<string | null>(null)
 
-  async function parse() {
-    if (!ready || restaurantId == null) return
-    setStep('parsing')
+  // Start from what is on the menu today (empty if nothing), until the user edits.
+  const date = today.data?.date
+  const current = today.data?.restaurants.find((r) => r.id === restaurantId)
+  useEffect(() => {
+    if (touched || !date) return
+    const items = current?.items.filter((i) => !i.fixed) ?? []
+    setDays([{ date, items: items.length ? items : [blankDish()] }])
+  }, [touched, date, current])
+
+  const edit = (next: (ds: MenuDay[]) => MenuDay[]) => {
+    setTouched(true)
+    setDays(next)
+  }
+  const setItems = (di: number, items: MenuItem[]) =>
+    edit((ds) => ds.map((d, i) => (i === di ? { ...d, items } : d)))
+
+  async function fillFromPhoto(file: File) {
+    if (restaurantId == null) return
+    setBusy('photo')
     setError(null)
+    setPhotoNote(null)
     try {
       const form = new FormData()
-      if (mode === 'text') form.set('text', menuText)
-      else if (file) form.set('file', await shrinkImage(file), file.name)
+      form.set('file', await shrinkImage(file), file.name)
       form.set('restaurantId', String(restaurantId))
-      form.set('scope', scope)
+      form.set('scope', photoScope)
       const res = await api.parseMenu(form)
-      setDays(res.days)
-      setStep('review')
+      if (res.days.length) {
+        edit(() => res.days)
+        setPhotoNote(t('menuEditor.photoFilled'))
+      } else {
+        setPhotoNote(t('menuEditor.photoEmpty'))
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
-      setStep('pick')
+    } finally {
+      setBusy(null)
     }
   }
 
   async function publish() {
     if (restaurantId == null) return
     const clean = days
-      .map((d) => ({ ...d, items: d.items.filter((i) => i.title.trim()) }))
+      .map((d) => ({ ...d, items: cleanDishes(d.items) }))
       .filter((d) => d.items.length)
-    setStep('publishing')
+    setBusy('publish')
     setError(null)
     try {
       await api.publishMenu(restaurantId, clean)
       await qc.invalidateQueries({ queryKey: ['today'] })
-      setStep('done')
+      setDone(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
-      setStep('review')
+    } finally {
+      setBusy(null)
     }
   }
 
-  const updateItem = (di: number, ii: number, patch: Partial<MenuItem>) =>
-    setDays((ds) =>
-      ds.map((d, i) =>
-        i !== di
-          ? d
-          : { ...d, items: d.items.map((it, j) => (j === ii ? { ...it, ...patch } : it)) },
-      ),
-    )
-  const removeItem = (di: number, ii: number) =>
-    setDays((ds) =>
-      ds.map((d, i) => (i !== di ? d : { ...d, items: d.items.filter((_, j) => j !== ii) })),
-    )
-  const addItem = (di: number) =>
-    setDays((ds) =>
-      ds.map((d, i) =>
-        i !== di
-          ? d
-          : {
-              ...d,
-              items: [...d.items, { title: '', description: null, priceSek: null }],
-            },
-      ),
-    )
+  function reset() {
+    setDone(false)
+    setTouched(false)
+    setPhotoNote(null)
+  }
 
-  const fmt = (date: string) =>
-    new Date(`${date}T12:00:00`).toLocaleDateString(i18n.language, {
+  const fmt = (d: string) =>
+    new Date(`${d}T12:00:00`).toLocaleDateString(i18n.language, {
       weekday: 'long',
       day: 'numeric',
-      month: 'short',
+      month: 'long',
     })
+  const canPublish =
+    restaurantId != null && days.some((d) => d.items.some((i) => i.title.trim())) && !busy
 
-  if (step === 'done') {
+  if (done) {
     return (
       <Notice tone="ok">
-        <p>{t('upload.published')}</p>
-        <button
-          type="button"
-          className="btn btn--small"
-          onClick={() => {
-            setFile(null)
-            setText(null)
-            setDays([])
-            setStep('pick')
-          }}
-        >
-          {t('upload.another')}
+        <p>{t('menuEditor.published')}</p>
+        <button type="button" className="btn btn--small" onClick={reset}>
+          {t('menuEditor.another')}
         </button>
       </Notice>
     )
   }
 
-  if (step === 'review' || step === 'publishing') {
-    return (
-      <div className="stack">
-        <Notice>{t('upload.reviewHint')}</Notice>
-        {days.length === 0 && <Notice tone="warn">{t('upload.nothingFound')}</Notice>}
-        {days.map((d, di) => (
-          <section key={d.date} className="panel">
-            <div className="section-head">
-              <h2>{fmt(d.date)}</h2>
-              <button
-                type="button"
-                className="btn btn--ghost btn--small"
-                onClick={() => setDays((ds) => ds.filter((_, i) => i !== di))}
-              >
-                {t('upload.removeDay')}
-              </button>
-            </div>
-            {d.items.map((item, ii) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: parsed items have no id; titles are being edited
-              <div key={`${d.date}-${ii}`} className="review-item">
-                <div className="review-item__row">
-                  <input
-                    aria-label={t('upload.dishTitle')}
-                    value={item.title}
-                    onChange={(e) => updateItem(di, ii, { title: e.target.value })}
-                  />
-                  <input
-                    aria-label={t('upload.price')}
-                    className="review-item__price"
-                    type="number"
-                    inputMode="numeric"
-                    placeholder="kr"
-                    value={item.priceSek ?? ''}
-                    onChange={(e) =>
-                      updateItem(di, ii, {
-                        priceSek: e.target.value ? Number(e.target.value) : null,
-                      })
-                    }
-                  />
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    aria-label={t('common.delete')}
-                    onClick={() => removeItem(di, ii)}
-                  >
-                    ✕
-                  </button>
-                </div>
-                <input
-                  aria-label={t('upload.description')}
-                  placeholder={t('upload.description')}
-                  value={item.description ?? ''}
-                  onChange={(e) => updateItem(di, ii, { description: e.target.value || null })}
-                />
-              </div>
-            ))}
-            <button type="button" className="btn btn--ghost btn--small" onClick={() => addItem(di)}>
-              {t('upload.addDish')}
-            </button>
-          </section>
-        ))}
-        {error && <p className="error">{error}</p>}
-        <div className="savebar">
-          <button type="button" className="btn btn--ghost" onClick={() => setStep('pick')}>
-            {t('common.back')}
-          </button>
-          <button
-            type="button"
-            className="btn"
-            disabled={
-              step === 'publishing' || !days.some((d) => d.items.some((i) => i.title.trim()))
-            }
-            onClick={publish}
-          >
-            {step === 'publishing' ? t('common.saving') : t('upload.publish')}
-          </button>
-        </div>
-      </div>
-    )
-  }
-
   return (
-    <div className="panel stack">
-      <p className="muted small">{t('upload.intro')}</p>
+    <div className="stack">
       <label className="field">
         <span>{t('meal.restaurant')}</span>
         <select
           value={restaurantId ?? ''}
           onChange={(e) => {
             setRestaurantId(e.target.value ? Number(e.target.value) : null)
-            setText(null)
+            setTouched(false)
+            setPhotoNote(null)
           }}
         >
           <option value="">{t('meal.choose')}</option>
@@ -277,162 +158,68 @@ function UploadMenu() {
           ))}
         </select>
       </label>
-      <div className="field">
-        <span>{t('upload.scope')}</span>
-        <div className="segmented">
-          {(['today', 'week'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              aria-pressed={scope === s}
-              className={scope === s ? 'is-on' : ''}
-              onClick={() => setScope(s)}
-            >
-              {t(`upload.scope_${s}`)}
+
+      {restaurantId != null && (
+        <>
+          <section className="panel">
+            <h2>{t('menuEditor.photoTitle')}</h2>
+            <p className="muted small">{t('menuEditor.photoIntro')}</p>
+            <div className="segmented">
+              {(['today', 'week'] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  aria-pressed={photoScope === s}
+                  className={photoScope === s ? 'is-on' : ''}
+                  onClick={() => setPhotoScope(s)}
+                >
+                  {t(`menuEditor.scope_${s}`)}
+                </button>
+              ))}
+            </div>
+            <label className="field">
+              <span className="sr-only">{t('menuEditor.photoTitle')}</span>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                disabled={busy !== null}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (file) void fillFromPhoto(file)
+                }}
+              />
+            </label>
+            {busy === 'photo' && <p className="muted small">{t('menuEditor.reading')}</p>}
+            {photoNote && <p className="small">{photoNote}</p>}
+          </section>
+
+          {days.map((d, di) => (
+            <section key={d.date} className="panel">
+              <div className="section-head">
+                <h2>{fmt(d.date)}</h2>
+                {days.length > 1 && (
+                  <button
+                    type="button"
+                    className="btn btn--ghost btn--small"
+                    onClick={() => edit((ds) => ds.filter((_, i) => i !== di))}
+                  >
+                    {t('menuEditor.removeDay')}
+                  </button>
+                )}
+              </div>
+              <DishEditor items={d.items} onChange={(items) => setItems(di, items)} />
+            </section>
+          ))}
+
+          {error && <p className="error">{error}</p>}
+          <div className="savebar">
+            <button type="button" className="btn" disabled={!canPublish} onClick={publish}>
+              {busy === 'publish' ? t('common.saving') : t('menuEditor.publish')}
             </button>
-          ))}
-        </div>
-      </div>
-      <div className="segmented">
-        {(['photo', 'text'] as const).map((m) => (
-          <button
-            key={m}
-            type="button"
-            aria-pressed={mode === m}
-            className={mode === m ? 'is-on' : ''}
-            onClick={() => setMode(m)}
-          >
-            {t(`upload.mode_${m}`)}
-          </button>
-        ))}
-      </div>
-      {mode === 'photo' ? (
-        <label className="field">
-          <span>{t('upload.photo')}</span>
-          <input
-            type="file"
-            accept="image/*,application/pdf"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-          />
-        </label>
-      ) : (
-        <label className="field">
-          <span>{t('upload.text')}</span>
-          <textarea
-            rows={6}
-            value={menuText}
-            placeholder={t('upload.textPlaceholder')}
-            onChange={(e) => setText(e.target.value)}
-          />
-        </label>
+          </div>
+        </>
       )}
-      {error && <p className="error">{error}</p>}
-      <button
-        type="button"
-        className="btn"
-        disabled={!ready || restaurantId == null || step === 'parsing'}
-        onClick={parse}
-      >
-        {step === 'parsing' ? t('upload.parsing') : t('upload.parse')}
-      </button>
-      {mode === 'photo' && <p className="muted small">{t('upload.privacy')}</p>}
     </div>
-  )
-}
-
-function SuggestUrl() {
-  const { t } = useTranslation()
-  const api = useApi()
-  const restaurants = useRestaurants()
-  const [restaurantId, setRestaurantId] = useState<number | null>(null)
-  const [restaurantName, setRestaurantName] = useState('')
-  const [url, setUrl] = useState('')
-  const [comment, setComment] = useState('')
-  const [sent, setSent] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    try {
-      await api.suggestUrl({
-        restaurantId,
-        restaurantName: restaurantId == null ? restaurantName.trim() || null : null,
-        url: url.trim(),
-        comment: comment.trim() || null,
-      })
-      setSent(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
-    }
-  }
-
-  if (sent) {
-    return (
-      <Notice tone="ok">
-        <p>{t('suggest.thanks')}</p>
-        <button
-          type="button"
-          className="btn btn--small"
-          onClick={() => {
-            setSent(false)
-            setUrl('')
-            setComment('')
-          }}
-        >
-          {t('suggest.another')}
-        </button>
-      </Notice>
-    )
-  }
-
-  return (
-    <form className="panel form" onSubmit={submit}>
-      <p className="muted small">{t('suggest.intro')}</p>
-      <label className="field">
-        <span>{t('meal.restaurant')}</span>
-        <select
-          value={restaurantId ?? ''}
-          onChange={(e) => setRestaurantId(e.target.value ? Number(e.target.value) : null)}
-        >
-          <option value="">{t('suggest.newRestaurant')}</option>
-          {restaurants.data?.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      {restaurantId == null && (
-        <label className="field">
-          <span>{t('suggest.name')}</span>
-          <input
-            value={restaurantName}
-            onChange={(e) => setRestaurantName(e.target.value)}
-            required
-          />
-        </label>
-      )}
-      <label className="field">
-        <span>{t('suggest.url')}</span>
-        <input
-          type="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://"
-          required
-        />
-      </label>
-      <label className="field">
-        <span>{t('suggest.comment')}</span>
-        <textarea rows={2} value={comment} onChange={(e) => setComment(e.target.value)} />
-      </label>
-      {error && <p className="error">{error}</p>}
-      <div className="form__actions">
-        <button type="submit" className="btn">
-          {t('suggest.submit')}
-        </button>
-      </div>
-    </form>
   )
 }

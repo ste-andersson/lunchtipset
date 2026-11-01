@@ -21,9 +21,7 @@ export const restaurants = pgTable('restaurants', {
   website: text('website'),
   category: text('category'),
   description: text('description'),
-  /** The always-available menu as the admin wrote it. */
-  fixedMenuText: text('fixed_menu_text'),
-  /** fixedMenuText read into dishes ({ title, description, priceSek }[]). */
+  /** Dishes served every day: { title, description, priceSek }[]. */
   fixedMenu: jsonb('fixed_menu').notNull().default([]),
   active: boolean('active').notNull().default(true),
   createdAt: createdAt(),
@@ -98,17 +96,3 @@ export const mealLogs = pgTable(
   },
   (t) => [index('meal_logs_user_idx').on(t.userId, t.date)],
 )
-
-export const urlSuggestions = pgTable('url_suggestions', {
-  id: serial('id').primaryKey(),
-  restaurantId: integer('restaurant_id').references(() => restaurants.id, {
-    onDelete: 'cascade',
-  }),
-  restaurantName: text('restaurant_name'),
-  url: text('url').notNull(),
-  comment: text('comment'),
-  userId: text('user_id').notNull(),
-  /** 'pending' | 'accepted' | 'rejected' */
-  status: text('status').notNull().default('pending'),
-  createdAt: createdAt(),
-})

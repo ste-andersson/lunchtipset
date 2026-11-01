@@ -1,0 +1,1 @@
+ALTER TABLE "restaurants" DROP COLUMN "fixed_menu_text";

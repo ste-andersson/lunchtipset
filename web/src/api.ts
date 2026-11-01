@@ -1,4 +1,5 @@
 import type {
+  AdminRestaurant,
   Assistant,
   Me,
   MealLog,
@@ -10,7 +11,6 @@ import type {
   Sentiment,
   TasteMap,
   TodayResponse,
-  UrlSuggestion,
 } from '@lunch/shared'
 
 type GetToken = () => Promise<string | null>
@@ -47,7 +47,7 @@ async function request<T>(
   return res.json() as Promise<T>
 }
 
-export type RestaurantInput = Omit<Restaurant, 'id'>
+export type RestaurantInput = Omit<AdminRestaurant, 'id'>
 
 export function createApi(getToken: GetToken) {
   const get = <T>(p: string) => request<T>(getToken, 'GET', p)
@@ -72,25 +72,17 @@ export function createApi(getToken: GetToken) {
       restaurantId: number,
       note: { sentiment: Sentiment; text: string; source?: 'user' | 'assistant' },
     ) => send('POST', `/restaurants/${restaurantId}/notes`, note),
-    suggestUrl: (s: {
-      restaurantId: number | null
-      restaurantName: string | null
-      url: string
-      comment: string | null
-    }) => send('POST', '/url-suggestions', s),
     parseMenu: (form: FormData) => send<{ days: MenuDay[] }>('POST', '/menus/parse', form),
     publishMenu: (restaurantId: number, days: MenuDay[]) =>
       send('POST', '/menus/publish', { restaurantId, days }),
 
     admin: {
-      restaurants: () => get<Restaurant[]>('/admin/restaurants'),
-      createRestaurant: (r: RestaurantInput) => send<Restaurant>('POST', '/admin/restaurants', r),
+      restaurants: () => get<AdminRestaurant[]>('/admin/restaurants'),
+      createRestaurant: (r: RestaurantInput) =>
+        send<AdminRestaurant>('POST', '/admin/restaurants', r),
       updateRestaurant: (id: number, r: RestaurantInput) =>
-        send<Restaurant>('PUT', `/admin/restaurants/${id}`, r),
+        send<AdminRestaurant>('PUT', `/admin/restaurants/${id}`, r),
       deleteRestaurant: (id: number) => send('DELETE', `/admin/restaurants/${id}`),
-      urlSuggestions: () => get<UrlSuggestion[]>('/admin/url-suggestions'),
-      setSuggestionStatus: (id: number, status: 'accepted' | 'rejected') =>
-        send('PUT', `/admin/url-suggestions/${id}`, { status }),
       fetchLog: () => get<MenuFetchLog[]>('/admin/fetch-log'),
       fetchMenus: (restaurantId?: number) =>
         send<{ id: number; name: string; status: string; itemCount: number; message?: string }[]>(

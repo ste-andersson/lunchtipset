@@ -196,21 +196,5 @@ export function createLunchTools(get: () => ToolContext) {
       ctx.report(`Note on ${r.name}: "${text}"`)
       return 'Note saved for colleagues to see.'
     },
-
-    suggest_menu_url: async (p: Params) => {
-      const ctx = get()
-      if (!ctx.isSignedIn) return 'Failed: the caller must sign in in the app to suggest pages.'
-      const url = str(p.url)
-      if (!url || !/^https?:\/\//.test(url)) return 'Need a full url starting with https://'
-      const r = findRestaurant(p)
-      await ctx.api.suggestUrl({
-        restaurantId: r?.id ?? null,
-        restaurantName: r ? null : (str(p.restaurant_name) ?? null),
-        url,
-        comment: 'Via röstassistenten',
-      })
-      ctx.report(`Suggested menu page: ${url}`)
-      return 'Thanks, an admin will review it.'
-    },
   }
 }

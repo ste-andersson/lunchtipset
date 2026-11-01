@@ -156,7 +156,6 @@ async function buildToday(date: string): Promise<TodayResponse> {
           website: r.website,
           category: r.category,
           description: r.description,
-          fixedMenuText: r.fixedMenuText,
           active: r.active,
           menuSource: source,
           // Today's dishes first, then whatever is always on the menu.

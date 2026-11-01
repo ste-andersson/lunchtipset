@@ -4,9 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { formatDistance, Notice } from '../components/ui.tsx'
 import { useRestaurants, useUserData } from '../data.ts'
 import { LANGUAGES } from '../i18n.ts'
+import { setThemePref, useTheme } from '../theme.ts'
 
 export function PreferencesPage() {
   const { t, i18n } = useTranslation()
+  const { pref: themePref } = useTheme()
   const user = useUserData()
   const restaurants = useRestaurants()
   const [draft, setDraft] = useState<Preferences>(user.prefs)
@@ -119,6 +121,23 @@ export function PreferencesPage() {
             )
           })}
         </ul>
+      </section>
+
+      <section className="panel">
+        <h2>{t('theme.title')}</h2>
+        <div className="segmented">
+          {(['light', 'dark', 'system'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              aria-pressed={themePref === p}
+              className={themePref === p ? 'is-on' : ''}
+              onClick={() => setThemePref(p)}
+            >
+              {t(`theme.${p}`)}
+            </button>
+          ))}
+        </div>
       </section>
 
       <section className="panel">

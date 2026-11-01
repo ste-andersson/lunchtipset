@@ -24,7 +24,6 @@ function restaurant(id: number, distanceMeters: number, items: MenuItem[]): Toda
     website: null,
     category: null,
     description: null,
-    fixedMenuText: null,
     active: true,
     items,
     menuSource: items.length ? 'web' : null,

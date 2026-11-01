@@ -1,13 +1,15 @@
+import { isoDate } from '@lunch/shared'
 import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router'
 import { useAppAuth } from './auth.tsx'
-import { useMe } from './data.ts'
+import { useMe, useToday } from './data.ts'
 import { ContributePage } from './pages/ContributePage.tsx'
 import { HistoryPage } from './pages/HistoryPage.tsx'
 import { PreferencesPage } from './pages/PreferencesPage.tsx'
 import { RingPage } from './pages/RingPage.tsx'
 import { TodayPage } from './pages/TodayPage.tsx'
+import { setThemePref, useTheme } from './theme.ts'
 
 // The voice SDK is large; only load it when someone actually calls.
 const CallPage = lazy(() => import('./pages/CallPage.tsx').then((m) => ({ default: m.CallPage })))
@@ -44,54 +46,69 @@ export function App() {
   )
 }
 
+/** The gingham tablecloth with a label: logo and the lunch date, on every page. */
 function TopBar() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const auth = useAppAuth()
+  const { theme } = useTheme()
+  // Same query as the Today page, so this is served from the cache. Until it
+  // answers, show today's date so the label never changes text.
+  const today = useToday()
+  const subtitle = new Date(`${today.data?.date ?? isoDate()}T12:00:00`).toLocaleDateString(
+    i18n.language,
+    { weekday: 'long', day: 'numeric', month: 'long' },
+  )
+
   return (
-    <header className="topbar">
-      <NavLink to="/" className="brand">
-        <span className="brand__mark" aria-hidden>
-          🍽
-        </span>
-        Lunchtipset
-      </NavLink>
-      <nav className="topbar__links">
-        <NavLink to="/">{t('nav.today')}</NavLink>
-        <NavLink to="/ring">{t('nav.call')}</NavLink>
-        <NavLink to="/installningar">{t('nav.settings')}</NavLink>
-      </nav>
-      {auth.enabled && auth.isLoaded && (
-        <div className="topbar__account">
-          {auth.userId ? (
-            <button type="button" className="btn btn--ghost btn--small" onClick={auth.openProfile}>
+    <header className="cloth">
+      <div className="cloth__corner">
+        <button
+          type="button"
+          className="cloth__btn"
+          onClick={() => setThemePref(theme === 'dark' ? 'light' : 'dark')}
+          aria-label={theme === 'dark' ? t('theme.toLight') : t('theme.toDark')}
+          title={theme === 'dark' ? t('theme.toLight') : t('theme.toDark')}
+        >
+          {theme === 'dark' ? '☀' : '☾'}
+        </button>
+        {auth.enabled &&
+          auth.isLoaded &&
+          (auth.userId ? (
+            <button type="button" className="cloth__btn" onClick={auth.openProfile}>
               {t('auth.account')}
             </button>
           ) : (
-            <button type="button" className="btn btn--small" onClick={auth.signIn}>
+            <button type="button" className="cloth__btn" onClick={auth.signIn}>
               {t('auth.signIn')}
             </button>
-          )}
-        </div>
-      )}
+          ))}
+      </div>
+      <NavLink to="/" className="cloth__label">
+        <span className="cloth__logo">
+          Lunchtipset
+          <span className="cloth__heart" aria-hidden>
+            ♥
+          </span>
+        </span>
+        <span className="cloth__sub">{subtitle}</span>
+      </NavLink>
     </header>
   )
 }
 
 const NAV = [
-  { to: '/', key: 'nav.today', icon: '🍽' },
-  { to: '/ring', key: 'nav.call', icon: '📞' },
-  { to: '/installningar', key: 'nav.settings', icon: '⚙' },
+  { to: '/', key: 'nav.today' },
+  { to: '/ring', key: 'nav.call' },
+  { to: '/installningar', key: 'nav.settings' },
 ] as const
 
+/** Floating denim pill, on phones and desktop alike. */
 function BottomNav() {
   const { t } = useTranslation()
   return (
-    <nav className="bottomnav">
+    <nav className="pillnav" aria-label={t('nav.main')}>
       {NAV.map((n) => (
-        <NavLink key={n.to} to={n.to} end={n.to === '/'} className="bottomnav__item">
-          <span aria-hidden className="bottomnav__icon">
-            {n.icon}
-          </span>
+        <NavLink key={n.to} to={n.to} end={n.to === '/'} className="pillnav__item">
           {t(n.key)}
         </NavLink>
       ))}

@@ -22,6 +22,20 @@
       "when": 1793562288737,
       "tag": "0002_fixed_menu",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793572769579,
+      "tag": "0003_drop_url_suggestions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793572993670,
+      "tag": "0004_drop_fixed_menu_text",
+      "breakpoints": true
     }
   ]
 }

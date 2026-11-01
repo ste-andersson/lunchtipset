@@ -46,6 +46,6 @@ export const restaurantSchema = z.object({
   website: z.url().nullable(),
   category: z.string().max(100).nullable(),
   description: z.string().max(2000).nullable(),
-  fixedMenuText: z.string().max(5000).nullable().default(null),
+  fixedMenu: z.array(menuItemSchema).max(60).default([]),
   active: z.boolean().default(true),
 })

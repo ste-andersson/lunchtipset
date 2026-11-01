@@ -47,9 +47,13 @@ export interface Restaurant {
   website: string | null
   category: string | null
   description: string | null
-  /** The always-available menu in the admin's own words; empty if none. */
-  fixedMenuText: string | null
   active: boolean
+}
+
+/** What admins edit: a restaurant including its fixed menu. */
+export interface AdminRestaurant extends Restaurant {
+  /** Dishes served every day, shown next to (or instead of) the day's menu. */
+  fixedMenu: MenuItem[]
 }
 
 export interface MenuItem {
@@ -133,16 +137,6 @@ export interface Assistant {
   voiceId: string | null
   imageUrl: string | null
   ambience: string | null
-}
-
-export interface UrlSuggestion {
-  id: number
-  restaurantId: number | null
-  restaurantName: string | null
-  url: string
-  comment: string | null
-  status: 'pending' | 'accepted' | 'rejected'
-  createdAt: string
 }
 
 export interface MenuFetchLog {
