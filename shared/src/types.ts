@@ -131,7 +131,7 @@ export interface Assistant {
   id: string
   name: string
   language: 'sv' | 'en'
-  tagline: string
+  flag: 'se' | 'skane' | 'gb' | 'us'
   prompt: string
   firstMessage: string
   voiceId: string | null

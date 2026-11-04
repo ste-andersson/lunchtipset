@@ -1127,6 +1127,14 @@ input[type="file"] {
   font-size: 3.4rem;
   border-width: 3px;
 }
+.flag {
+  display: inline-block;
+  height: 0.8em;
+  margin-left: 4px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.2);
+  vertical-align: baseline;
+}
 .avatar--initial {
   display: grid;
   place-items: center;

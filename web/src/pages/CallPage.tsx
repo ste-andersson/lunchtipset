@@ -230,7 +230,7 @@ function CallScreen() {
           ? t('call.ended')
           : phase === 'error'
             ? t('call.failed')
-            : assistant.tagline
+            : ''
   const live = phase === 'ringing' || phase === 'connected'
 
   return (

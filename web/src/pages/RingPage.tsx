@@ -17,8 +17,9 @@ export function RingPage() {
           <Link key={a.id} to={`/ring/${a.id}`} className="contact">
             <Avatar assistant={a} />
             <div className="contact__body">
-              <strong>{a.name}</strong>
-              <span className="muted small">{a.tagline}</span>
+              <strong>
+                {a.name} <Flag assistant={a} />
+              </strong>
             </div>
             <span className="contact__call" aria-hidden>
               <svg
@@ -36,6 +37,10 @@ export function RingPage() {
       </div>
     </div>
   )
+}
+
+export function Flag({ assistant }: { assistant: Assistant }) {
+  return <img className="flag" src={`/flags/${assistant.flag}.svg`} alt="" />
 }
 
 export function Avatar({ assistant, size = 'md' }: { assistant: Assistant; size?: 'md' | 'xl' }) {
