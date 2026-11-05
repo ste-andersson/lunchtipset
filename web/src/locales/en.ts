@@ -208,6 +208,12 @@ export const en: Shape<typeof sv> = {
     title: 'Call a lunch assistant',
     intro:
       "Talk to an assistant about today's lunches. It already knows what you like and where you've eaten.",
+    micTitle: 'Before you call',
+    micHeadphones:
+      'Calls work best with headphones. Otherwise the assistant may get confused by background noise.',
+    micAccess:
+      'Lunchtipset needs your microphone to hear you. Your browser will ask for permission when you tap the button.',
+    micContinue: 'Okay, continue',
   },
   call: {
     ringing: 'Calling…',

@@ -1,12 +1,37 @@
 import type { Assistant } from '@lunch/shared'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
-import { Notice } from '../components/ui.tsx'
+import { Notice, Sheet } from '../components/ui.tsx'
 import { useAssistants } from '../data.ts'
+
+/** True when the browser would still ask the user about the microphone. */
+async function shouldAskForMicrophone() {
+  try {
+    const status = await navigator.permissions?.query({ name: 'microphone' as PermissionName })
+    return !status || status.state === 'prompt'
+  } catch {
+    // Not supported everywhere (e.g. Safari); show the explanation anyway.
+    return true
+  }
+}
+
+async function requestMicrophone() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    for (const track of stream.getTracks()) track.stop()
+  } catch {
+    // Denied or no microphone; the call page explains it if they try to call.
+  }
+}
 
 export function RingPage() {
   const { t } = useTranslation()
   const assistants = useAssistants()
+  const [intro, setIntro] = useState(false)
+  useEffect(() => {
+    void shouldAskForMicrophone().then(setIntro)
+  }, [])
   return (
     <div className="stack">
       <h1>{t('ring.title')}</h1>
@@ -35,6 +60,22 @@ export function RingPage() {
           </Link>
         ))}
       </div>
+      <Sheet open={intro} onClose={() => setIntro(false)} title={t('ring.micTitle')}>
+        <div className="stack">
+          <p>{t('ring.micHeadphones')}</p>
+          <p>{t('ring.micAccess')}</p>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setIntro(false)
+              void requestMicrophone()
+            }}
+          >
+            {t('ring.micContinue')}
+          </button>
+        </div>
+      </Sheet>
     </div>
   )
 }

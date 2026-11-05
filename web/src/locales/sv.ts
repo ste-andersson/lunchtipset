@@ -204,6 +204,12 @@ export const sv = {
   ring: {
     title: 'Ring en lunchassistent',
     intro: 'Prata med en assistent om dagens luncher. Den vet redan vad du gillar och var du ätit.',
+    micTitle: 'Innan du ringer',
+    micHeadphones:
+      'Samtalen fungerar bäst med hörlurar. Annars kan assistenten bli förvirrad av röster i bakgrunden.',
+    micAccess:
+      'Lunchtipset behöver komma åt din mikrofon för att kunna höra dig. Din webbläsare frågar om lov när du trycker på knappen.',
+    micContinue: 'Okej, fortsätt',
   },
   call: {
     ringing: 'Ringer…',
