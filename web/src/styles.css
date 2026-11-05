@@ -1326,8 +1326,12 @@ input[type="file"] {
   cursor: pointer;
 }
 .call__hangup {
-  background: #c8442f;
-  transform: rotate(135deg);
+  background: #d6342a;
+}
+.call__hangup,
+.call__dial {
+  display: grid;
+  place-items: center;
 }
 .call__dial {
   background: #5c8a4e;

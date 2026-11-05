@@ -21,6 +21,8 @@ import { Avatar } from './RingPage.tsx'
 
 /** Let it ring a little even when the connection is quick; it's part of the feel. */
 const MIN_RING_MS = 2500
+/** Pause between the pick-up click and the assistant's first words. */
+const ANSWER_DELAY_MS = 500
 
 type Phase = 'idle' | 'ringing' | 'connected' | 'ended' | 'error'
 type Line = { role: 'user' | 'agent'; text: string }
@@ -79,8 +81,6 @@ function CallScreen() {
 
   const conversation = useConversation({
     onConnect: () => {
-      stopRingback()
-      startAmbience(assistant?.ambience ?? null)
       setPhase('connected')
     },
     onDisconnect: () => {
@@ -128,7 +128,8 @@ function CallScreen() {
   const callRef = useRef(call)
   callRef.current = call
   const autoDialed = useRef(false)
-  const canDial = !!assistant && !!today.data
+  // Wait for the taste reading so excluded dishes never reach the prompt.
+  const canDial = !!assistant && !!today.data && !taste.isLoading
   useEffect(() => {
     if (!canDial || autoDialed.current) return
     const id = setTimeout(() => {
@@ -165,10 +166,15 @@ function CallScreen() {
           today.data.date,
           taste.data,
         ),
+        tasteMap: taste.data,
         isSignedIn: user.isSignedIn,
         userName: auth.firstName,
       })
       await new Promise((r) => setTimeout(r, Math.max(0, MIN_RING_MS - (Date.now() - ringStart))))
+      // Pick up: click and ambience first, then give them a moment before the assistant speaks.
+      stopRingback()
+      startAmbience(assistant.ambience ?? null)
+      await new Promise((r) => setTimeout(r, ANSWER_DELAY_MS))
       conversation.startSession({
         signedUrl,
         clientTools: tools,
@@ -183,6 +189,7 @@ function CallScreen() {
       })
     } catch (err) {
       stopRingback()
+      stopAmbience()
       setError(
         err instanceof DOMException && err.name === 'NotAllowedError'
           ? t('call.micDenied')
@@ -314,7 +321,7 @@ function CallScreen() {
           onClick={hangUp}
           aria-label={t('call.hangUp')}
         >
-          ☎
+          <Handset hangUp />
         </button>
       ) : (
         <div className="call__actions">
@@ -325,7 +332,7 @@ function CallScreen() {
             disabled={!today.data}
             aria-label={t('call.call', { name: assistant.name })}
           >
-            📞
+            <Handset />
           </button>
           <span className="muted small">
             {phase === 'idle' ? t('call.call', { name: assistant.name }) : t('call.callAgain')}
@@ -338,6 +345,21 @@ function CallScreen() {
         </div>
       )}
     </div>
+  )
+}
+
+function Handset({ hangUp }: { hangUp?: boolean }) {
+  return (
+    <svg
+      width="34"
+      height="34"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      style={hangUp ? { transform: 'rotate(135deg)' } : undefined}
+    >
+      <path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z" />
+    </svg>
   )
 }
 
