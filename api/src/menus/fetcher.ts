@@ -39,6 +39,7 @@ export async function fetchRestaurantMenu(restaurant: {
   id: number
   name: string
   menuUrl: string
+  description?: string | null
 }) {
   const today = isoDate()
   try {
@@ -47,6 +48,7 @@ export async function fetchRestaurantMenu(restaurant: {
       today,
       scope: 'week',
       restaurantName: restaurant.name,
+      restaurantDescription: restaurant.description,
     })
     await saveMenuDays(restaurant.id, 'web', days)
     const itemCount = days.reduce((n, d) => n + d.items.length, 0)
@@ -68,7 +70,12 @@ export async function fetchRestaurantMenu(restaurant: {
 
 export async function fetchAllMenus(onlyId?: number) {
   const rows = await db
-    .select({ id: restaurants.id, name: restaurants.name, menuUrl: restaurants.menuUrl })
+    .select({
+      id: restaurants.id,
+      name: restaurants.name,
+      menuUrl: restaurants.menuUrl,
+      description: restaurants.description,
+    })
     .from(restaurants)
     .where(
       onlyId

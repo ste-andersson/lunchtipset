@@ -62,11 +62,23 @@ export function gemini(): GoogleGenAI {
   return client
 }
 
-function instructions(today: string, scope: MenuScope, restaurantName: string): string {
+function instructions(
+  today: string,
+  scope: MenuScope,
+  restaurantName: string,
+  restaurantDescription?: string | null,
+): string {
   const week = workWeek(menuDay(today))
   const dates = week.map((d, i) => `${WEEKDAYS_SV[i]} = ${d}`).join(', ')
+  const note = restaurantDescription?.trim()
   return [
     `You read lunch menus for the restaurant "${restaurantName}" in Stockholm, Sweden.`,
+    ...(note
+      ? [
+          `Background about the restaurant, written by the site admins (it may state prices or what is always included, use it to fill in priceSek when the menu itself lacks a price): ${note}`,
+        ]
+      : []),
+    'Normalize capitalization: if a title or description is written in ALL CAPS (or otherwise inconsistent), rewrite it in normal sentence case (first letter capital, rest lowercase, proper nouns and acronyms keep their capitals). Do not change the wording.',
     scope === 'today'
       ? `Today is ${today}. Return today's lunch as one day with date ${today}. If the menu covers several days, pick the dishes for today's weekday; if it is a single day's menu or the day is unclear, return all lunch dishes shown.`
       : `Return the lunch dishes for every weekday the menu covers. The week in question: ${dates}.`,
@@ -79,7 +91,12 @@ function instructions(today: string, scope: MenuScope, restaurantName: string): 
 /** Turns a web page, PDF or photo into structured menu days. */
 export async function extractMenu(
   input: MenuInput,
-  opts: { today: string; scope: MenuScope; restaurantName: string },
+  opts: {
+    today: string
+    scope: MenuScope
+    restaurantName: string
+    restaurantDescription?: string | null
+  },
 ): Promise<MenuDay[]> {
   const contentPart =
     input.kind === 'text'
@@ -91,7 +108,17 @@ export async function extractMenu(
     contents: [
       {
         role: 'user',
-        parts: [{ text: instructions(opts.today, opts.scope, opts.restaurantName) }, contentPart],
+        parts: [
+          {
+            text: instructions(
+              opts.today,
+              opts.scope,
+              opts.restaurantName,
+              opts.restaurantDescription,
+            ),
+          },
+          contentPart,
+        ],
       },
     ],
     config: {

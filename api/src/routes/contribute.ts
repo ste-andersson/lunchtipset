@@ -72,6 +72,7 @@ contributeRoutes.post('/menus/parse', async (c) => {
     today: isoDate(),
     scope,
     restaurantName: restaurant.name,
+    restaurantDescription: restaurant.description,
   })
   return c.json({ days })
 })

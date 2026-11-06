@@ -239,7 +239,7 @@ publicRoutes.post('/conversation/signed-url', async (c) => {
 
 export async function restaurantExists(id: number) {
   const [row] = await db
-    .select({ id: restaurants.id, name: restaurants.name })
+    .select({ id: restaurants.id, name: restaurants.name, description: restaurants.description })
     .from(restaurants)
     .where(eq(restaurants.id, id))
   return row ?? null
