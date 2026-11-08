@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   type Assistant,
   addDays,
@@ -10,22 +11,31 @@ import {
   type SentimentCounts,
   type TodayResponse,
 } from '@lunch/shared'
-import { and, desc, eq, gte, isNotNull, or } from 'drizzle-orm'
+import { and, desc, eq, gte, isNotNull, lt, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { type AuthVars, isAdmin } from '../auth.ts'
 import { assistants } from '../data/assistants.ts'
 import { db } from '../db/index.ts'
-import { mealLogs, menuFetches, menuItems, restaurantNotes, restaurants } from '../db/schema.ts'
+import {
+  callLogs,
+  mealLogs,
+  menuFetches,
+  menuItems,
+  restaurantNotes,
+  restaurants,
+} from '../db/schema.ts'
 import { env } from '../env.ts'
 import { tasteFor } from '../menus/taste.ts'
 import { authors } from '../users.ts'
 import { agentIdFor } from '../voice/syncAgents.ts'
 import { parseJson } from './parse.ts'
-import { sentimentSchema } from './validation.ts'
+import { callLogSchema, sentimentSchema } from './validation.ts'
 
 const TASTE_MAX_MEALS = 40
+const CALL_LOG_DAYS = 30
+const DAY_MS = 24 * 60 * 60 * 1000
 
 const OPINION_WINDOW_DAYS = 120
 const NOTES_PER_RESTAURANT = 5
@@ -235,6 +245,27 @@ publicRoutes.post('/conversation/signed-url', async (c) => {
   }
   const { signed_url } = (await res.json()) as { signed_url: string }
   return c.json({ signedUrl: signed_url })
+})
+
+/** Saved when a call ends so admins can read what was said. Guests can call too. */
+publicRoutes.post('/calls', async (c) => {
+  const body = await parseJson(c, callLogSchema)
+  if (!assistants.some((a) => a.id === body.assistantId)) {
+    throw new HTTPException(404, { message: 'Okänd assistent' })
+  }
+  // Nothing was said: not worth keeping.
+  if (body.transcript.length === 0) return c.json({ ok: true })
+  await db.insert(callLogs).values({
+    ...body,
+    id: randomUUID(),
+    userId: c.get('userId'),
+    startedAt: new Date(body.startedAt),
+  })
+  // Calls contain personal details, so don't keep them for long.
+  await db
+    .delete(callLogs)
+    .where(lt(callLogs.startedAt, new Date(Date.now() - CALL_LOG_DAYS * DAY_MS)))
+  return c.json({ ok: true }, 201)
 })
 
 export async function restaurantExists(id: number) {

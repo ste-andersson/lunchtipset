@@ -27,6 +27,28 @@ export const mealSchema = z.object({
   comment: z.string().max(1000).nullable(),
 })
 
+export const callLogSchema = z.object({
+  assistantId: z.string().min(1).max(64),
+  startedAt: z.iso.datetime(),
+  durationSec: z
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 3600),
+  endReason: z.enum(['ended', 'left']),
+  transcript: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'agent']),
+        text: z.string().max(4000),
+        t: z.number().int().min(0),
+      }),
+    )
+    .max(500),
+  actions: z.array(z.string().max(500)).max(200),
+  prompt: z.string().max(60_000),
+})
+
 export const menuItemSchema = z.object({
   title: z.string().min(1).max(300),
   description: z.string().max(1000).nullable(),

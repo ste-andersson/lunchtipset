@@ -36,6 +36,13 @@
       "when": 1793572993670,
       "tag": "0004_drop_fixed_menu_text",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794160293819,
+      "tag": "0005_brief_goblin_queen",
+      "breakpoints": true
     }
   ]
 }

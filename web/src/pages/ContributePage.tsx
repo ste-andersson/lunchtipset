@@ -48,7 +48,10 @@ function MenuEditor() {
   )
   const [days, setDays] = useState<MenuDay[]>([])
   const [touched, setTouched] = useState(false)
-  const [photoScope, setPhotoScope] = useState<'today' | 'week'>('today')
+  const [photoScope, setPhotoScope] = useState<'today' | 'week' | 'fixed'>('today')
+  const [fixedItems, setFixedItems] = useState<MenuItem[]>([])
+  const [fixedTouched, setFixedTouched] = useState(false)
+  const fixedMode = photoScope === 'fixed'
   const [busy, setBusy] = useState<'photo' | 'publish' | null>(null)
   const [done, setDone] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -62,6 +65,12 @@ function MenuEditor() {
     const items = current?.items.filter((i) => !i.fixed) ?? []
     setDays([{ date, items: items.length ? items : [blankDish()] }])
   }, [touched, date, current])
+
+  useEffect(() => {
+    if (fixedTouched) return
+    const items = current?.items.filter((i) => i.fixed) ?? []
+    setFixedItems(items.length ? items : [blankDish()])
+  }, [fixedTouched, current])
 
   const edit = (next: (ds: MenuDay[]) => MenuDay[]) => {
     setTouched(true)
@@ -81,7 +90,11 @@ function MenuEditor() {
       form.set('restaurantId', String(restaurantId))
       form.set('scope', photoScope)
       const res = await api.parseMenu(form)
-      if (res.days.length) {
+      if (res.days.length && fixedMode) {
+        setFixedTouched(true)
+        setFixedItems(res.days.flatMap((d) => d.items))
+        setPhotoNote(t('menuEditor.photoFilled'))
+      } else if (res.days.length) {
         edit(() => res.days)
         setPhotoNote(t('menuEditor.photoFilled'))
       } else {
@@ -102,7 +115,8 @@ function MenuEditor() {
     setBusy('publish')
     setError(null)
     try {
-      await api.publishMenu(restaurantId, clean)
+      if (fixedMode) await api.publishFixedMenu(restaurantId, cleanDishes(fixedItems))
+      else await api.publishMenu(restaurantId, clean)
       await qc.invalidateQueries({ queryKey: ['today'] })
       setDone(true)
     } catch (err) {
@@ -115,6 +129,7 @@ function MenuEditor() {
   function reset() {
     setDone(false)
     setTouched(false)
+    setFixedTouched(false)
     setPhotoNote(null)
   }
 
@@ -124,8 +139,11 @@ function MenuEditor() {
       day: 'numeric',
       month: 'long',
     })
+  // An empty list is allowed for the fixed menu, so a standing menu can be cleared.
   const canPublish =
-    restaurantId != null && days.some((d) => d.items.some((i) => i.title.trim())) && !busy
+    restaurantId != null &&
+    (fixedMode || days.some((d) => d.items.some((i) => i.title.trim()))) &&
+    !busy
 
   if (done) {
     return (
@@ -147,6 +165,7 @@ function MenuEditor() {
           onChange={(e) => {
             setRestaurantId(e.target.value ? Number(e.target.value) : null)
             setTouched(false)
+            setFixedTouched(false)
             setPhotoNote(null)
           }}
         >
@@ -165,7 +184,7 @@ function MenuEditor() {
             <h2>{t('menuEditor.photoTitle')}</h2>
             <p className="muted small">{t('menuEditor.photoIntro')}</p>
             <div className="segmented">
-              {(['today', 'week'] as const).map((s) => (
+              {(['today', 'week', 'fixed'] as const).map((s) => (
                 <button
                   key={s}
                   type="button"
@@ -194,23 +213,38 @@ function MenuEditor() {
             {photoNote && <p className="small">{photoNote}</p>}
           </section>
 
-          {days.map((d, di) => (
-            <section key={d.date} className="panel">
-              <div className="section-head">
-                <h2>{fmt(d.date)}</h2>
-                {days.length > 1 && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--small"
-                    onClick={() => edit((ds) => ds.filter((_, i) => i !== di))}
-                  >
-                    {t('menuEditor.removeDay')}
-                  </button>
-                )}
-              </div>
-              <DishEditor items={d.items} onChange={(items) => setItems(di, items)} />
+          {fixedMode && (
+            <section className="panel">
+              <h2>{t('menuEditor.fixedTitle')}</h2>
+              <p className="muted small">{t('menuEditor.fixedHint')}</p>
+              <DishEditor
+                items={fixedItems}
+                onChange={(items) => {
+                  setFixedTouched(true)
+                  setFixedItems(items)
+                }}
+              />
             </section>
-          ))}
+          )}
+
+          {!fixedMode &&
+            days.map((d, di) => (
+              <section key={d.date} className="panel">
+                <div className="section-head">
+                  <h2>{fmt(d.date)}</h2>
+                  {days.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--small"
+                      onClick={() => edit((ds) => ds.filter((_, i) => i !== di))}
+                    >
+                      {t('menuEditor.removeDay')}
+                    </button>
+                  )}
+                </div>
+                <DishEditor items={d.items} onChange={(items) => setItems(di, items)} />
+              </section>
+            ))}
 
           {error && <p className="error">{error}</p>}
           <div className="savebar">

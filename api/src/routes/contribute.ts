@@ -1,15 +1,16 @@
 import { daysBetween, isoDate } from '@lunch/shared'
+import { eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { type AuthVars, requireUser, userIdOf } from '../auth.ts'
 import { db } from '../db/index.ts'
-import { restaurantNotes } from '../db/schema.ts'
+import { restaurantNotes, restaurants } from '../db/schema.ts'
 import { extractMenu, type MenuInput } from '../menus/extract.ts'
 import { saveMenuDays } from '../menus/store.ts'
 import { idParam, parseJson } from './parse.ts'
 import { restaurantExists } from './public.ts'
-import { menuDaysSchema, sentimentSchema } from './validation.ts'
+import { menuDaysSchema, menuItemSchema, sentimentSchema } from './validation.ts'
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 const MAX_TEXT_CHARS = 5000
@@ -45,7 +46,7 @@ contributeRoutes.post('/menus/parse', async (c) => {
   const form = await c.req.formData()
   const file = form.get('file')
   const text = form.get('text')
-  const scope = z.enum(['today', 'week']).parse(form.get('scope'))
+  const scope = z.enum(['today', 'week', 'fixed']).parse(form.get('scope'))
   const restaurantId = Number(form.get('restaurantId'))
   const restaurant = await restaurantExists(restaurantId)
   if (!restaurant) throw new HTTPException(404, { message: 'Okänd restaurang' })
@@ -75,6 +76,20 @@ contributeRoutes.post('/menus/parse', async (c) => {
     restaurantDescription: restaurant.description,
   })
   return c.json({ days })
+})
+
+/** Replaces a restaurant's fixed menu (the dishes served every day). */
+contributeRoutes.post('/menus/fixed', async (c) => {
+  const body = await parseJson(
+    c,
+    z.object({ restaurantId: z.number().int(), items: z.array(menuItemSchema).max(60) }),
+  )
+  if (!(await restaurantExists(body.restaurantId))) throw new HTTPException(404)
+  await db
+    .update(restaurants)
+    .set({ fixedMenu: body.items })
+    .where(eq(restaurants.id, body.restaurantId))
+  return c.json({ ok: true })
 })
 
 /** Step 2: the user has checked (and maybe corrected) the result. */

@@ -3,7 +3,8 @@ import { type MenuDay, menuDay, workWeek } from '@lunch/shared'
 import { z } from 'zod'
 import { env } from '../env.ts'
 
-export type MenuScope = 'today' | 'week'
+/** "fixed" is the restaurant's standing menu, the same every day. */
+export type MenuScope = 'today' | 'week' | 'fixed'
 
 export type MenuInput =
   | { kind: 'text'; text: string }
@@ -81,8 +82,14 @@ function instructions(
     'Normalize capitalization: if a title or description is written in ALL CAPS (or otherwise inconsistent), rewrite it in normal sentence case (first letter capital, rest lowercase, proper nouns and acronyms keep their capitals). Do not change the wording.',
     scope === 'today'
       ? `Today is ${today}. Return today's lunch as one day with date ${today}. If the menu covers several days, pick the dishes for today's weekday; if it is a single day's menu or the day is unclear, return all lunch dishes shown.`
-      : `Return the lunch dishes for every weekday the menu covers. The week in question: ${dates}.`,
-    'Dishes served every day (e.g. "veckans vegetariska", "dagens soppa", always-on salads) belong on each day they apply to.',
+      : scope === 'fixed'
+        ? `This is the restaurant's fixed menu: dishes served every day, not tied to a weekday. Return every dish shown as one day with date ${today}.`
+        : `Return the lunch dishes for every weekday the menu covers. The week in question: ${dates}.`,
+    ...(scope === 'fixed'
+      ? []
+      : [
+          'Dishes served every day (e.g. "veckans vegetariska", "dagens soppa", always-on salads) belong on each day they apply to.',
+        ]),
     'Keep titles in the original language. Put sides and details (e.g. vegetarian, contains nuts) in description. priceSek is the lunch price in SEK if stated, per dish or shared.',
     'Ignore à la carte, dinner, drinks and dates outside this week. If no lunch menu can be found, return {"days": []}.',
   ].join('\n')
@@ -133,7 +140,7 @@ export async function extractMenu(
 
   // For "today" the user has told us the date; don't let a misread date drop the menu.
   const days =
-    opts.scope === 'today'
+    opts.scope !== 'week'
       ? [{ date: opts.today, items: parsed.days.flatMap((d) => d.items) }]
       : parsed.days.filter((d) => week.has(d.date))
 

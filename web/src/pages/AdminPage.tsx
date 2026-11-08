@@ -16,8 +16,89 @@ export function AdminPage() {
     <div className="stack">
       <h1>{t('admin.title')}</h1>
       <Restaurants />
+      <Calls />
       <FetchLog />
     </div>
+  )
+}
+
+function Calls() {
+  const { t, i18n } = useTranslation()
+  const api = useApi()
+  const list = useQuery({ queryKey: ['admin', 'calls'], queryFn: api.admin.calls })
+  const [openId, setOpenId] = useState<string | null>(null)
+  const open = useQuery({
+    queryKey: ['admin', 'call', openId],
+    queryFn: () => api.admin.call(openId as string),
+    enabled: openId !== null,
+  })
+  const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  return (
+    <section className="panel">
+      <div className="section-head">
+        <h2>{t('admin.calls')}</h2>
+      </div>
+      {list.data?.length === 0 && <p className="muted small">{t('admin.noCalls')}</p>}
+      <ul className="admin-list">
+        {list.data?.map((c) => (
+          <li key={c.id}>
+            <div>
+              <strong>{c.author?.name ?? t('admin.guest')}</strong>{' '}
+              <span className="muted small">
+                {c.assistantId} ·{' '}
+                {new Date(c.startedAt).toLocaleString(i18n.language, {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}{' '}
+                · {mmss(c.durationSec)} · {c.lineCount} · {t(`admin.${c.endReason}`)}
+              </span>
+            </div>
+            <div className="admin-list__actions">
+              <button
+                type="button"
+                className="btn btn--ghost btn--small"
+                onClick={() => setOpenId(c.id)}
+              >
+                {t('common.open')}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <Sheet open={openId !== null} onClose={() => setOpenId(null)} title={t('admin.calls')}>
+        {open.data && (
+          <div className="stack">
+            {open.data.transcript.map((l, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: append-only transcript
+              <p key={i} className="small">
+                <strong>{l.role === 'user' ? t('admin.you') : t('admin.assistant')}</strong>{' '}
+                <span className="muted">{mmss(l.t)}</span> {l.text}
+              </p>
+            ))}
+            {open.data.actions.length > 0 && (
+              <>
+                <h3>{t('admin.actions')}</h3>
+                <ul className="small">
+                  {open.data.actions.map((a, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: append-only list
+                    <li key={i}>{a}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <details>
+              <summary>{t('admin.prompt')}</summary>
+              <pre className="small" style={{ whiteSpace: 'pre-wrap' }}>
+                {open.data.prompt}
+              </pre>
+            </details>
+          </div>
+        )}
+      </Sheet>
+    </section>
   )
 }
 

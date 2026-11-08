@@ -36,6 +36,7 @@ export const en: Shape<typeof sv> = {
     back: 'Back',
     edit: 'Edit',
     delete: 'Delete',
+    open: 'Open',
   },
   today: {
     eatenAt: "You've logged lunch at {{place}} today. Enjoy!",
@@ -164,6 +165,9 @@ export const en: Shape<typeof sv> = {
       "Take a photo of the menu or board and we'll fill in the dishes. You can change everything before publishing. The image is not stored.",
     scope_today: 'Today',
     scope_week: 'The whole week',
+    scope_fixed: 'Fixed menu',
+    fixedTitle: 'Fixed menu',
+    fixedHint: "Dishes served every day. Replaces the place's fixed menu when you publish.",
     reading: 'Reading the menu…',
     photoFilled: 'Done! Check that it looks right and fix anything that is wrong.',
     photoEmpty: 'No lunch menu found in the image. Type the dishes below instead.',
@@ -202,6 +206,15 @@ export const en: Shape<typeof sv> = {
     fetchLog: 'Menu fetching',
     fetchAll: 'Fetch all now',
     fetching: 'Fetching…',
+    calls: 'Calls',
+    noCalls: 'No saved calls.',
+    guest: 'Guest',
+    actions: 'The assistant did',
+    prompt: 'Prompt',
+    you: 'User',
+    assistant: 'Assistant',
+    ended: 'Ended',
+    left: 'Left the page',
   },
   fetchStatus: { ok: 'OK', empty: 'Empty', error: 'Error' },
   ring: {
@@ -213,6 +226,8 @@ export const en: Shape<typeof sv> = {
       'Calls work best with headphones. Otherwise the assistant may get confused by background noise.',
     micAccess:
       'Lunchtipset needs your microphone to hear you. Your browser will ask for permission when you tap the button.',
+    callsSaved:
+      'The call is saved as text for 30 days so we can improve the assistants. Only admins can read it. The audio is not saved.',
     micContinue: 'Okay, continue',
   },
   call: {

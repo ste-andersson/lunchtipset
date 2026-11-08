@@ -1,5 +1,5 @@
 import { ConversationProvider, type Language, useConversation } from '@elevenlabs/react'
-import { rankRestaurants } from '@lunch/shared'
+import { type CallLine, rankRestaurants } from '@lunch/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -25,7 +25,7 @@ const MIN_RING_MS = 2500
 const ANSWER_DELAY_MS = 500
 
 type Phase = 'idle' | 'ringing' | 'connected' | 'ended' | 'error'
-type Line = { role: 'user' | 'agent'; text: string }
+type Line = CallLine
 
 export function CallPage() {
   return (
@@ -57,6 +57,37 @@ function CallScreen() {
   const [speakerOff, setSpeakerOff] = useState(false)
   const captionsRef = useRef<HTMLDivElement>(null)
 
+  // What gets saved when the call ends. Refs, so the end handlers never see stale state.
+  const log = useRef({ startedAt: 0, prompt: '', sent: true })
+  const linesRef = useRef<Line[]>([])
+  linesRef.current = lines
+  const actionsRef = useRef<string[]>([])
+  actionsRef.current = actions
+  const assistantIdRef = useRef<string | null>(null)
+  assistantIdRef.current = assistant?.id ?? null
+  const apiRef = useRef(api)
+  apiRef.current = api
+
+  /** Saves the transcript once per call, so admins can read it later. Never blocks or throws. */
+  const saveLog = (endReason: 'ended' | 'left') => {
+    const l = log.current
+    if (l.sent || !assistantIdRef.current || linesRef.current.length === 0) return
+    l.sent = true
+    apiRef.current
+      .logCall({
+        assistantId: assistantIdRef.current,
+        startedAt: new Date(l.startedAt).toISOString(),
+        durationSec: Math.round((Date.now() - l.startedAt) / 1000),
+        endReason,
+        transcript: linesRef.current,
+        actions: actionsRef.current,
+        prompt: l.prompt,
+      })
+      .catch((err) => console.warn('Could not save the call log', err))
+  }
+  const saveLogRef = useRef(saveLog)
+  saveLogRef.current = saveLog
+
   // Tools read the latest state through this ref, so they never act on stale data.
   const ctxRef = useRef<ToolContext | null>(null)
   if (today.data) {
@@ -87,6 +118,7 @@ function CallScreen() {
       stopRingback()
       stopAmbience()
       playClick()
+      saveLogRef.current('ended')
       setPhase((p) => (p === 'error' ? p : 'ended'))
     },
     onError: (message) => {
@@ -94,7 +126,14 @@ function CallScreen() {
       setError(String(message))
     },
     onMessage: ({ message, role }) =>
-      setLines((l) => [...l, { role: role === 'user' ? 'user' : 'agent', text: message }]),
+      setLines((l) => [
+        ...l,
+        {
+          role: role === 'user' ? 'user' : 'agent',
+          text: message,
+          t: Math.max(0, Math.round((Date.now() - log.current.startedAt) / 1000)),
+        },
+      ]),
   })
 
   useEffect(() => {
@@ -109,6 +148,7 @@ function CallScreen() {
   endRef.current = conversation.endSession
   useEffect(
     () => () => {
+      saveLogRef.current('left')
       endRef.current()
       stopRingback()
       stopAmbience()
@@ -175,6 +215,7 @@ function CallScreen() {
       stopRingback()
       startAmbience(assistant.ambience ?? null)
       await new Promise((r) => setTimeout(r, ANSWER_DELAY_MS))
+      log.current = { startedAt: Date.now(), prompt, sent: false }
       conversation.startSession({
         signedUrl,
         clientTools: tools,

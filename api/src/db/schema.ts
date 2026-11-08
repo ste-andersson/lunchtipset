@@ -78,6 +78,29 @@ export const userProfiles = pgTable('user_profiles', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
+/** Text transcripts of assistant calls, for admins to review. Pruned after a few weeks. */
+export const callLogs = pgTable(
+  'call_logs',
+  {
+    id: text('id').primaryKey(),
+    /** Null for guests. */
+    userId: text('user_id'),
+    assistantId: text('assistant_id').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull(),
+    durationSec: integer('duration_sec').notNull(),
+    /** 'ended' | 'left' (the caller navigated away mid-call) */
+    endReason: text('end_reason').notNull(),
+    /** { role, text, t }[] */
+    transcript: jsonb('transcript').notNull(),
+    /** What the assistant did with its tools, in plain text. */
+    actions: jsonb('actions').notNull(),
+    /** The system prompt this call ran on. */
+    prompt: text('prompt').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index('call_logs_started_idx').on(t.startedAt)],
+)
+
 export const mealLogs = pgTable(
   'meal_logs',
   {

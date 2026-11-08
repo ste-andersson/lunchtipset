@@ -32,6 +32,7 @@ export const sv = {
     back: 'Tillbaka',
     edit: 'Ändra',
     delete: 'Ta bort',
+    open: 'Öppna',
   },
   today: {
     eatenAt: 'Du har loggat lunch på {{place}} idag. Smaklig måltid!',
@@ -161,6 +162,9 @@ export const sv = {
       'Fota menyn eller tavlan så fyller vi i rätterna åt dig. Du kan ändra allt innan du publicerar. Bilden sparas inte.',
     scope_today: 'Dagens',
     scope_week: 'Hela veckan',
+    scope_fixed: 'Fast meny',
+    fixedTitle: 'Fast meny',
+    fixedHint: 'Rätter som serveras varje dag. Ersätter ställets fasta meny när du publicerar.',
     reading: 'Läser menyn…',
     photoFilled: 'Klart! Kolla att det stämmer och rätta det som blivit fel.',
     photoEmpty: 'Hittade ingen lunchmeny i bilden. Skriv in rätterna själv nedan.',
@@ -199,6 +203,15 @@ export const sv = {
     fetchLog: 'Menyhämtning',
     fetchAll: 'Hämta alla nu',
     fetching: 'Hämtar…',
+    calls: 'Samtal',
+    noCalls: 'Inga sparade samtal.',
+    guest: 'Gäst',
+    actions: 'Assistenten gjorde',
+    prompt: 'Prompt',
+    you: 'Användare',
+    assistant: 'Assistent',
+    ended: 'Avslutat',
+    left: 'Lämnade sidan',
   },
   fetchStatus: { ok: 'OK', empty: 'Tom', error: 'Fel' },
   ring: {
@@ -209,6 +222,8 @@ export const sv = {
       'Samtalen fungerar bäst med hörlurar. Annars kan assistenten bli förvirrad av röster i bakgrunden.',
     micAccess:
       'Lunchtipset behöver komma åt din mikrofon för att kunna höra dig. Din webbläsare frågar om lov när du trycker på knappen.',
+    callsSaved:
+      'Samtalet sparas som text i 30 dagar så att vi kan göra assistenterna bättre. Bara admin kan läsa det. Ljudet sparas inte.',
     micContinue: 'Okej, fortsätt',
   },
   call: {

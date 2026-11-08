@@ -64,6 +64,7 @@ export function RingPage() {
         <div className="stack">
           <p>{t('ring.micHeadphones')}</p>
           <p>{t('ring.micAccess')}</p>
+          <p>{t('ring.callsSaved')}</p>
           <button
             type="button"
             className="btn"

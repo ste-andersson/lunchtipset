@@ -149,6 +149,32 @@ export interface MenuFetchLog {
   fetchedAt: string
 }
 
+export interface CallLine {
+  role: 'user' | 'agent'
+  text: string
+  /** Seconds since the call was picked up. */
+  t: number
+}
+
+/** One row in the admin's call list. */
+export interface CallLogSummary {
+  id: string
+  assistantId: string
+  /** Null for guests. */
+  author: Author | null
+  startedAt: string
+  durationSec: number
+  endReason: string
+  lineCount: number
+}
+
+/** A saved call: what was said, what the assistant did, and the prompt it ran on. */
+export interface CallLog extends CallLogSummary {
+  transcript: CallLine[]
+  actions: string[]
+  prompt: string
+}
+
 /**
  * The AI's reading of today's dishes for one user, keyed by dishKey(), all 0–1:
  * fit with their free text and rating history, and how different the dish is
