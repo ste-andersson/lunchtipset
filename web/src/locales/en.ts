@@ -232,7 +232,7 @@ export const en: Shape<typeof sv> = {
     micHeadphones:
       'Calls work best with headphones. Otherwise the assistant may get confused by background noise.',
     micAccess:
-      'Lunchtipset needs your microphone to hear you. Your browser will ask for permission when you tap the button.',
+      'Lunchlinjen needs your microphone to hear you. Your browser will ask for permission when you tap the button.',
     callsSaved:
       'The call is saved as text for 30 days so we can improve the assistants. Only admins can read it. The audio is not saved.',
     micContinue: 'Okay, continue',

@@ -228,7 +228,7 @@ export const sv = {
     micHeadphones:
       'Samtalen fungerar bäst med hörlurar. Annars kan assistenten bli förvirrad av röster i bakgrunden.',
     micAccess:
-      'Lunchtipset behöver komma åt din mikrofon för att kunna höra dig. Din webbläsare frågar om lov när du trycker på knappen.',
+      'Lunchlinjen behöver komma åt din mikrofon för att kunna höra dig. Din webbläsare frågar om lov när du trycker på knappen.',
     callsSaved:
       'Samtalet sparas som text i 30 dagar så att vi kan göra assistenterna bättre. Bara admin kan läsa det. Ljudet sparas inte.',
     micContinue: 'Okej, fortsätt',

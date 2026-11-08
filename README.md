@@ -1,4 +1,4 @@
-# Lunchtipset
+# Lunchlinjen
 
 Lunchtips för Coops huvudkontor i Solna: dagens menyer i en vy, förslag utifrån
 dina preferenser, och röstsamtal med lunchassistenter som redan vet vad du gillar.

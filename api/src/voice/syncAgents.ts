@@ -10,7 +10,7 @@ import { type ClientToolDefinition, clientTools } from './toolDefinitions.ts'
  */
 
 const BASE = 'https://api.elevenlabs.io/v1/convai'
-const APP_TAG = 'lunchtipset'
+const APP_TAG = 'lunchlinjen'
 const assistantTag = (id: string) => `${APP_TAG}:${id}`
 const HASH_PREFIX = `${APP_TAG}-hash:`
 
@@ -65,7 +65,7 @@ function toolConfig(t: ClientToolDefinition) {
 
 function agentConfig(a: ServerAssistant, toolIds: string[]) {
   return {
-    name: `Lunchtipset – ${a.name}`,
+    name: `Lunchlinjen – ${a.name}`,
     conversation_config: {
       agent: {
         // Replaced per call with the full prompt (menus, preferences, history).

@@ -13,7 +13,7 @@ const MIN_TEXT_CHARS = 150
 async function download(url: string): Promise<MenuInput> {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; Lunchtipset/1.0)',
+      'User-Agent': 'Mozilla/5.0 (compatible; Lunchlinjen/1.0)',
       'Accept-Language': 'sv-SE,sv;q=0.9,en;q=0.8',
     },
     signal: AbortSignal.timeout(20_000),

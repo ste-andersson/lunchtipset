@@ -7,7 +7,7 @@ interface LunchDB extends DBSchema {
   meals: { key: string; value: MealLog }
 }
 
-const dbPromise = openDB<LunchDB>('lunchtipset', 1, {
+const dbPromise = openDB<LunchDB>('lunchlinjen', 1, {
   upgrade(db) {
     db.createObjectStore('kv')
     db.createObjectStore('meals', { keyPath: 'id' })

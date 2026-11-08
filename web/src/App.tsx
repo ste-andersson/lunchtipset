@@ -85,7 +85,7 @@ function TopBar() {
       </div>
       <NavLink to="/" className="cloth__label">
         <span className="cloth__logo">
-          Lunchtipset
+          Lunchlinjen
           <span className="cloth__heart" aria-hidden>
             ♥
           </span>

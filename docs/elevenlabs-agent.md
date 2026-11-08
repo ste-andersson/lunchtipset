@@ -8,7 +8,7 @@ set, the API creates and updates everything when it starts
   matched by name. Their handlers run in the browser
   ([web/src/call/tools.ts](../web/src/call/tools.ts)); names and parameters must match.
 - **One agent per assistant** in [assistants.ts](../api/src/data/assistants.ts),
-  named "Lunchtipset – <name>" and tagged `lunchtipset:<id>`, with:
+  named "Lunchlinjen – <name>" and tagged `lunchlinjen:<id>`, with:
   - the tools plus the built-in _end call_ tool,
   - authentication on, so it can only be reached through signed URLs from the API,
   - overrides allowed for prompt, first message, language and voice,
