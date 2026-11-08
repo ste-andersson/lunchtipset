@@ -37,6 +37,7 @@ export const en: Shape<typeof sv> = {
     helpTitle: 'Help your colleagues find the right place',
     helpText:
       'Snap a menu, fix a dish that is wrong or write a review. That gives everyone better lunch tips.',
+    signInGoogle: 'Sign in with Google',
     guest: 'Continue as a guest',
     guestNote:
       'As a guest you can read menus and call the assistants, but not choose a restaurant or add menus.',

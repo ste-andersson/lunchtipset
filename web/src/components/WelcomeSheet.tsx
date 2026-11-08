@@ -61,7 +61,7 @@ export function WelcomeSheet() {
             auth.signIn()
           }}
         >
-          {t('auth.signIn')}
+          {t('welcome.signInGoogle')}
         </button>
         <button type="button" className="btn btn--ghost" onClick={dismiss}>
           {t('welcome.guest')}

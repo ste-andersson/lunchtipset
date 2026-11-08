@@ -33,6 +33,7 @@ export const sv = {
     helpTitle: 'Hjälp kollegorna hitta rätt',
     helpText:
       'Fota en meny, rätta en rätt som blivit fel eller skriv en recension. Då får alla bättre lunchtips.',
+    signInGoogle: 'Logga in med Google',
     guest: 'Fortsätt som gäst',
     guestNote:
       'Som gäst kan du läsa menyer och ringa assistenterna, men inte välja restaurang eller lägga in menyer.',
