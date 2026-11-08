@@ -27,6 +27,7 @@ function restaurant(id: number, distanceMeters: number, items: MenuItem[]): Toda
     active: true,
     items,
     menuSource: items.length ? 'web' : null,
+    goers: [],
     colleagues: { positive: 0, neutral: 0, negative: 0 },
     notes: [],
     lastFetch: null,

@@ -104,9 +104,17 @@ export function directionsUrl(destination: string): string {
 
 export type FetchStatus = 'ok' | 'empty' | 'error'
 
+/** Someone who has said they are having lunch at a restaurant today. */
+export interface Goer extends Author {
+  /** True for the person asking, so the app can show their own choice. */
+  isMe: boolean
+}
+
 export interface TodayRestaurant extends Restaurant {
   items: MenuItem[]
   menuSource: MenuSource | null
+  /** Who has chosen to eat here on this date, the viewer first. */
+  goers: Goer[]
   colleagues: SentimentCounts
   notes: RestaurantNote[]
   lastFetch: { status: FetchStatus; at: string; message: string | null } | null

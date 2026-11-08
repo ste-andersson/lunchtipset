@@ -30,6 +30,8 @@ export interface ToolContext {
   report: (text: string) => void
   /** Called after the assistant changed a menu, so the app can refetch. */
   onMenuChanged: () => void
+  /** Choose (or clear, with null) where the caller will have lunch on a date. */
+  choosePlan: (date: string, restaurantId: number | null) => Promise<unknown>
 }
 
 type Params = Record<string, unknown>
@@ -183,6 +185,20 @@ export function createLunchTools(get: () => ToolContext) {
       })
       ctx.report(`Logged ${date}: ${name}${dish ? `, ${dish}` : ''}`)
       return `Logged ${name} on ${date}.`
+    },
+
+    choose_restaurant: async (p: Params) => {
+      const ctx = get()
+      if (!ctx.isSignedIn)
+        return 'Failed: the caller must sign in in the app to choose a restaurant.'
+      const r = findRestaurant(p)
+      if (!r) return 'Unknown restaurant.'
+      const clear = p.clear === true || p.clear === 'true'
+      await ctx.choosePlan(ctx.today.date, clear ? null : r.id)
+      ctx.report(clear ? `No longer going to ${r.name}` : `Going to ${r.name} today`)
+      return clear
+        ? `Removed the caller's choice of ${r.name}.`
+        : `Saved: the caller is going to ${r.name} today. Colleagues can see it.`
     },
 
     save_restaurant_note: async (p: Params) => {

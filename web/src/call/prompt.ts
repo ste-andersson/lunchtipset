@@ -82,7 +82,10 @@ export function buildSystemPrompt(input: {
     "- If they tell you what a restaurant is serving today, or that a listed dish is wrong or sold out, fix today's menu with add_dish / remove_dish (one call per dish). To replace a wrong menu, add the right dishes first, then remove the wrong ones. Briefly confirm what you changed.",
     loggedToday
       ? `- They have already logged today's lunch: ${loggedToday.restaurantName}${loggedToday.dish ? ` (${loggedToday.dish})` : ''}.`
-      : '- When the caller has said where they are going today, log it with log_meal (date today, with the dish if known) without asking permission, and mention it in half a sentence at most.',
+      : isSignedIn
+        ? '- Once the caller has decided where to have lunch today, save it with choose_restaurant (without asking permission) so colleagues can see who is going where, and mention it in half a sentence at most. Use log_meal only for lunches they have already eaten. If they change their mind, call choose_restaurant again with the new place, or with clear true.'
+        : '- When the caller has said where they are going today, log it with log_meal (date today, with the dish if known) without asking permission, and mention it in half a sentence at most.',
+    '- You are told below where colleagues are going today. Use it naturally when it helps ("Anna and Per are going to X, want to join them?"), mostly to back up a suggestion or when the caller asks. Never pressure the caller and never list everyone. Only mention people that are listed below.',
     loggedYesterday
       ? ''
       : `- They have not logged last workday (${yesterday}). Ask about it ONLY if the conversation naturally leads there (they mention yesterday, compare with it, or say they are tired of something), at most once, and never as a closing question. If they tell you, log it with log_meal and a sentiment. Otherwise leave it.`,
@@ -91,7 +94,7 @@ export function buildSystemPrompt(input: {
   )
   if (!isSignedIn) {
     add(
-      'The caller is not signed in: they can change their own preferences and log meals, but save_restaurant_note, add_dish and remove_dish will fail. Tell them they need to sign in in the app for that.',
+      'The caller is not signed in: they can change their own preferences and log meals, but choose_restaurant, save_restaurant_note, add_dish and remove_dish will fail. Tell them they need to sign in in the app for that.',
       '',
     )
   }
@@ -110,6 +113,16 @@ export function buildSystemPrompt(input: {
     `What matters to them (0–10): ${WEIGHT_KEYS.map((k) => `${WEIGHT_NAMES[k]} ${prefs.weights[k]}`).join(', ')}`,
     '',
   )
+
+  add('# Where colleagues are going for lunch today')
+  const plans = today.restaurants.flatMap((r) => {
+    const names = r.goers.filter((g) => !g.isMe).map((g) => g.name)
+    return names.length ? [`- ${r.name}: ${names.join(', ')}`] : []
+  })
+  const mine = today.restaurants.find((r) => r.goers.some((g) => g.isMe))
+  add(plans.length ? plans.join('\n') : 'Nobody has said yet.')
+  if (mine) add(`The caller has already chosen to go to ${mine.name} today.`)
+  add('')
 
   add(
     '# What they have eaten recently (background only)',

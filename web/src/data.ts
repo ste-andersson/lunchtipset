@@ -27,7 +27,19 @@ export function useMe() {
 /** Without a date the API picks: today, or Monday on an empty weekend. */
 export function useToday(date?: string) {
   const api = useApi()
-  return useQuery({ queryKey: ['today', date], queryFn: () => api.today(date) })
+  const { userId } = useAppAuth()
+  // The answer says which choices are the viewer's own, so it differs per user.
+  return useQuery({ queryKey: ['today', date, userId], queryFn: () => api.today(date) })
+}
+
+/** Choose (or, with null, clear) where to have lunch on a date, then refresh the menus. */
+export function useChoosePlan() {
+  const api = useApi()
+  const qc = useQueryClient()
+  return async (date: string, restaurantId: number | null) => {
+    await api.setPlan(date, restaurantId)
+    await qc.invalidateQueries({ queryKey: ['today'] })
+  }
 }
 
 export function useRestaurants() {

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import {
   type Assistant,
   addDays,
+  type Goer,
   isoDate,
   type MenuItem,
   type MenuSource,
@@ -20,6 +21,7 @@ import { assistants } from '../data/assistants.ts'
 import { db } from '../db/index.ts'
 import {
   callLogs,
+  lunchPlans,
   mealLogs,
   menuFetches,
   menuItems,
@@ -73,12 +75,13 @@ const dateParam = z
  */
 publicRoutes.get('/today', async (c) => {
   const asked = c.req.query('date')
-  if (asked) return c.json(await buildToday(dateParam.parse(asked)))
-  const today = await buildToday(isoDate())
+  const viewer = c.get('userId')
+  if (asked) return c.json(await buildToday(dateParam.parse(asked), viewer))
+  const today = await buildToday(isoDate(), viewer)
   const next = menuDay(today.date)
   const hasDailyMenus = today.restaurants.some((r) => r.items.some((i) => !i.fixed))
   if (next === today.date || hasDailyMenus) return c.json(today)
-  return c.json(await buildToday(next))
+  return c.json(await buildToday(next, viewer))
 })
 
 /** Free-text preferences → how well each of the day's dishes fits. Works for guests. */
@@ -106,10 +109,10 @@ publicRoutes.post('/taste', async (c) => {
   return c.json(await tasteFor(today, body.freeText, body.meals))
 })
 
-async function buildToday(date: string): Promise<TodayResponse> {
+async function buildToday(date: string, viewer: string | null = null): Promise<TodayResponse> {
   const since = addDays(date, -OPINION_WINDOW_DAYS)
 
-  const [rs, items, meals, notes, fetches] = await Promise.all([
+  const [rs, items, meals, notes, fetches, plans] = await Promise.all([
     db.select().from(restaurants).where(eq(restaurants.active, true)),
     db.select().from(menuItems).where(eq(menuItems.date, date)).orderBy(menuItems.position),
     db
@@ -131,11 +134,13 @@ async function buildToday(date: string): Promise<TodayResponse> {
       ),
     db.select().from(restaurantNotes).orderBy(desc(restaurantNotes.createdAt)).limit(500),
     db.select().from(menuFetches).orderBy(desc(menuFetches.fetchedAt)).limit(500),
+    db.select().from(lunchPlans).where(eq(lunchPlans.date, date)).orderBy(lunchPlans.createdAt),
   ])
 
   const people = await authors([
     ...notes.map((n) => n.userId),
     ...meals.filter((m) => m.comment).map((m) => m.userId),
+    ...plans.map((p) => p.userId),
   ])
 
   const body: TodayResponse = {
@@ -168,6 +173,18 @@ async function buildToday(date: string): Promise<TodayResponse> {
           description: r.description,
           active: r.active,
           menuSource: source,
+          // The viewer first, then in the order people chose.
+          goers: plans
+            .filter((p) => p.restaurantId === r.id)
+            .map((p): Goer => {
+              const person = people.get(p.userId)
+              return {
+                name: person?.name ?? 'Kollega',
+                imageUrl: person?.imageUrl ?? null,
+                isMe: p.userId === viewer,
+              }
+            })
+            .sort((a, b) => Number(b.isMe) - Number(a.isMe)),
           // Today's dishes first, then whatever is always on the menu.
           items: [
             ...own

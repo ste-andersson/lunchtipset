@@ -5,6 +5,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   serial,
   text,
   timestamp,
@@ -77,6 +78,20 @@ export const userProfiles = pgTable('user_profiles', {
   preferences: jsonb('preferences').notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+/** Where someone says they will have lunch on a date. One row per person and day. */
+export const lunchPlans = pgTable(
+  'lunch_plans',
+  {
+    userId: text('user_id').notNull(),
+    date: date('date').notNull(),
+    restaurantId: integer('restaurant_id')
+      .notNull()
+      .references(() => restaurants.id, { onDelete: 'cascade' }),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date] }), index('lunch_plans_date_idx').on(t.date)],
+)
 
 /** Text transcripts of assistant calls, for admins to review. Pruned after a few weeks. */
 export const callLogs = pgTable(

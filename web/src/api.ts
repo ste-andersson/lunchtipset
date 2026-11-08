@@ -81,6 +81,9 @@ export function createApi(getToken: GetToken) {
     putPreferences: (p: Preferences) => send<Preferences>('PUT', '/me/preferences', p),
     getMeals: () => get<MealLog[]>('/me/meals'),
     putMeals: (m: MealLog | MealLog[]) => send('PUT', '/me/meals', m),
+    /** Choose where to have lunch on a date; null clears the choice. */
+    setPlan: (date: string, restaurantId: number | null) =>
+      send('PUT', '/me/plan', { date, restaurantId }),
     deleteMeal: (id: string) => send('DELETE', `/me/meals/${encodeURIComponent(id)}`),
 
     addNote: (

@@ -16,7 +16,7 @@ import {
 import { buildSystemPrompt } from '../call/prompt.ts'
 import { createLunchTools, type ToolContext } from '../call/tools.ts'
 import { Notice } from '../components/ui.tsx'
-import { useApi, useAssistants, useTaste, useToday, useUserData } from '../data.ts'
+import { useApi, useAssistants, useChoosePlan, useTaste, useToday, useUserData } from '../data.ts'
 import { Avatar } from './RingPage.tsx'
 
 /** Let it ring a little even when the connection is quick; it's part of the feel. */
@@ -88,6 +88,8 @@ function CallScreen() {
   const saveLogRef = useRef(saveLog)
   saveLogRef.current = saveLog
 
+  const choosePlan = useChoosePlan()
+
   // Tools read the latest state through this ref, so they never act on stale data.
   const ctxRef = useRef<ToolContext | null>(null)
   if (today.data) {
@@ -99,6 +101,7 @@ function CallScreen() {
       saveMeal: user.saveMeal,
       report: (text) => setActions((a) => [...a, text]),
       onMenuChanged: () => void qc.invalidateQueries({ queryKey: ['today'] }),
+      choosePlan,
     }
   }
   const tools = useMemo(

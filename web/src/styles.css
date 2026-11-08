@@ -806,6 +806,33 @@ input[type="file"] {
   color: var(--muted);
 }
 
+/* "Jag går hit": a small section of its own above the card links */
+.going {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  /* The card's own 14px gap sits under the button, so the space matches above and below. */
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+}
+.going__people {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+}
+/* Looks like the "Fast meny" subheading (menu-card__section) */
+.going__hint {
+  margin: 0;
+}
+.going__label {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
 .dishes {
   display: flex;
   flex-direction: column;
@@ -914,6 +941,9 @@ input[type="file"] {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+.going__me .author__avatar {
+  box-shadow: 0 0 0 2px var(--mustard);
 }
 .author__name {
   position: absolute;

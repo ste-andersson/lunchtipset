@@ -74,6 +74,19 @@ export const clientTools: ClientToolDefinition[] = [
     },
   },
   {
+    name: 'choose_restaurant',
+    description:
+      'Save that the caller is going to have lunch at a restaurant today, once they have decided. Colleagues can see who is going where. Replaces an earlier choice.',
+    required: ['restaurant_id'],
+    properties: {
+      restaurant_id: restaurantId,
+      clear: {
+        type: 'boolean',
+        description: 'true to remove the choice because the caller is not going there after all',
+      },
+    },
+  },
+  {
     name: 'save_restaurant_note',
     description:
       'Save info about a restaurant that colleagues will see, e.g. long queues or a great new dish. Ask before saving.',

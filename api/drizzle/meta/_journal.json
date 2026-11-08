@@ -43,6 +43,13 @@
       "when": 1794160293819,
       "tag": "0005_brief_goblin_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794162049650,
+      "tag": "0006_puzzling_vertigo",
+      "breakpoints": true
     }
   ]
 }

@@ -9,9 +9,10 @@ import {
 import { Fragment, type ReactNode, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { useAppAuth } from '../auth.tsx'
 import { MealForm } from '../components/MealForm.tsx'
 import { AuthorAvatar, formatDistance, Notice, SENTIMENT_ICON, Sheet } from '../components/ui.tsx'
-import { useTaste, useToday, useUserData } from '../data.ts'
+import { useChoosePlan, useTaste, useToday, useUserData } from '../data.ts'
 
 const TOP_SUGGESTIONS = 3
 
@@ -19,6 +20,7 @@ export function TodayPage() {
   const { t } = useTranslation()
   const today = useToday()
   const user = useUserData()
+  const choosePlan = useChoosePlan()
   const [showAll, setShowAll] = useState(false)
   const [eating, setEating] = useState<TodayRestaurant | null>(null)
 
@@ -70,6 +72,7 @@ export function TodayPage() {
                 r={r}
                 filtered={!visibleIds.has(r.id)}
                 onEat={() => setEating(r)}
+                onChoose={(id) => choosePlan(today.data.date, id)}
               />
             ))}
             {hidden > 0 && (
@@ -146,10 +149,12 @@ function RestaurantCard({
   r,
   filtered,
   onEat,
+  onChoose,
 }: {
   r: TodayRestaurant
   filtered: boolean
   onEat: () => void
+  onChoose: (restaurantId: number | null) => Promise<unknown>
 }) {
   const { t } = useTranslation()
   const daily = r.items.filter((i) => !i.fixed)
@@ -170,6 +175,7 @@ function RestaurantCard({
           {t('today.or')}{' '}
           <Link to={`/installningar/bidra?restaurant=${r.id}`}>{t('today.typeIt')}</Link>
         </p>
+        <GoingSection r={r} onChoose={onChoose} />
         <CardLinks r={r} onEat={onEat} canEditMenu={false} />
       </article>
     )
@@ -223,12 +229,70 @@ function RestaurantCard({
         </details>
       )}
 
+      <GoingSection r={r} onChoose={onChoose} />
       <CardLinks r={r} onEat={onEat} canEditMenu={daily.length > 0} />
     </article>
   )
 }
 
-/** "Jag åt här · Recensera · …" as a row of plain text links. */
+/**
+ * "Jag går hit": choose where to have lunch today. Shows the faces of everyone who
+ * has chosen this place, the viewer's own first. Choosing another place moves you.
+ */
+function GoingSection({
+  r,
+  onChoose,
+}: {
+  r: TodayRestaurant
+  onChoose: (restaurantId: number | null) => Promise<unknown>
+}) {
+  const { t } = useTranslation()
+  const auth = useAppAuth()
+  const [busy, setBusy] = useState(false)
+  const going = r.goers.some((g) => g.isMe)
+  const signedIn = !!auth.userId
+  // Guests can't choose, so with nobody to show there is nothing to offer.
+  if (!signedIn && (r.goers.length === 0 || !auth.enabled)) return null
+
+  const toggle = async () => {
+    if (!signedIn) return auth.signIn()
+    setBusy(true)
+    try {
+      await onChoose(going ? null : r.id)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="going">
+      <p className="menu-card__section going__hint">
+        {going ? t('today.goingHint') : t('today.goHint')}
+      </p>
+      {r.goers.length > 0 && (
+        <div className="going__people">
+          {r.goers.map((g, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: names can repeat
+            <span key={i} className={g.isMe ? 'going__me' : ''}>
+              <AuthorAvatar author={g} />
+            </span>
+          ))}
+          <span className="going__label">{t('today.goingHere', { count: r.goers.length })}</span>
+        </div>
+      )}
+      <button
+        type="button"
+        className={`btn btn--small ${going ? 'btn--ghost' : ''}`}
+        disabled={busy}
+        onClick={toggle}
+      >
+        {!signedIn ? t('today.signInToGo') : going ? t('today.notGoing') : t('today.goHere')}
+      </button>
+    </div>
+  )
+}
+
+/** "Recensera · Ändra meny · …" as a row of plain text links. */
 function CardLinks({
   r,
   onEat,
