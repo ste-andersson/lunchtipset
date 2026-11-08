@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router'
 import { useAppAuth } from './auth.tsx'
+import { WelcomeSheet } from './components/WelcomeSheet.tsx'
 import { useMe, useToday } from './data.ts'
 import { ContributePage } from './pages/ContributePage.tsx'
 import { HistoryPage } from './pages/HistoryPage.tsx'
@@ -42,6 +43,7 @@ export function App() {
         </Suspense>
       </main>
       {!inCall && <BottomNav />}
+      {!inCall && <WelcomeSheet />}
     </div>
   )
 }

@@ -653,6 +653,29 @@ input[type="file"] {
   color: var(--text);
   font-size: 1.35rem;
 }
+
+/* Welcome box for people who are not signed in */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.welcome strong {
+  display: block;
+  font-family: var(--font-head);
+  font-size: 1.05rem;
+}
+.welcome p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+.welcome__note {
+  margin: 0;
+  text-align: center;
+}
 @media (min-width: 600px) {
   .sheet {
     margin: auto;

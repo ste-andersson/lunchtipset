@@ -26,6 +26,21 @@ export const en: Shape<typeof sv> = {
     signIn: 'Sign in',
     notConfigured: 'Sign-in is not enabled in this environment.',
   },
+  welcome: {
+    title: 'Welcome to Lunchlinjen',
+    personalTitle: 'Lunch tips that fit you',
+    personalText:
+      'Tell us what you like and the suggestions and the calls with the assistants get more personal. It all follows you across your devices.',
+    colleaguesTitle: 'Eat together with your colleagues',
+    colleaguesText:
+      "Choose where you're eating and your colleagues see it. You can also see who is going where and join them.",
+    helpTitle: 'Help your colleagues find the right place',
+    helpText:
+      'Snap a menu, fix a dish that is wrong or write a review. That gives everyone better lunch tips.',
+    guest: 'Continue as a guest',
+    guestNote:
+      'As a guest you can read menus and call the assistants, but not choose a restaurant or add menus.',
+  },
   common: {
     loading: 'Loading…',
     loadError: 'Could not load data. Try again in a moment.',

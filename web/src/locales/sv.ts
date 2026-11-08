@@ -22,6 +22,21 @@ export const sv = {
     signIn: 'Logga in',
     notConfigured: 'Inloggning är inte aktiverad i den här miljön.',
   },
+  welcome: {
+    title: 'Välkommen till Lunchlinjen',
+    personalTitle: 'Lunchtips som passar dig',
+    personalText:
+      'Berätta vad du gillar, så blir förslagen och samtalen med assistenterna mer personliga. Allt följer med dig på alla dina enheter.',
+    colleaguesTitle: 'Ät tillsammans med kollegorna',
+    colleaguesText:
+      'Välj var du ska äta, så ser kollegorna det. Du ser också vem som går vart och kan haka på.',
+    helpTitle: 'Hjälp kollegorna hitta rätt',
+    helpText:
+      'Fota en meny, rätta en rätt som blivit fel eller skriv en recension. Då får alla bättre lunchtips.',
+    guest: 'Fortsätt som gäst',
+    guestNote:
+      'Som gäst kan du läsa menyer och ringa assistenterna, men inte välja restaurang eller lägga in menyer.',
+  },
   common: {
     loading: 'Laddar…',
     loadError: 'Kunde inte hämta data. Försök igen om en stund.',
