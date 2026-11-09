@@ -243,7 +243,9 @@ export const en: Shape<typeof sv> = {
   ring: {
     title: 'Call a lunch assistant',
     intro:
-      "Talk to an assistant about today's lunches. It already knows what you like and where you've eaten.",
+      "Call or text an assistant about today's lunches. It already knows what you like and where you've eaten.",
+    message: 'Message {{name}}',
+    callName: 'Call {{name}}',
     micTitle: 'Before you call',
     micHeadphones:
       'Calls work best with headphones. Otherwise the assistant may get confused by background noise.',
@@ -270,5 +272,15 @@ export const en: Shape<typeof sv> = {
     call: 'Call {{name}}',
     callAgain: 'Call again',
     toToday: "To today's lunches",
+  },
+  chat: {
+    placeholder: 'Message',
+    send: 'Send',
+    empty: 'Text {{name}} to get a lunch tip.',
+    notDelivered: 'Not delivered. Tap to try again.',
+    typing: '{{name}} is typing',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    loading: "Fetching today's lunches…",
   },
 }

@@ -1125,9 +1125,17 @@ input[type="file"] {
 .contact {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   padding: 14px 16px;
   color: var(--text);
+}
+.contact__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: inherit;
   text-decoration: none;
 }
 .contact + .contact {
@@ -1146,8 +1154,8 @@ input[type="file"] {
   font-family: var(--font-head);
   font-size: 1.15rem;
 }
-/* Light round button with a green handset */
-.contact__call {
+/* Light round buttons: a blue speech bubble and a green handset */
+.contact__btn {
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -1156,11 +1164,19 @@ input[type="file"] {
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--surface);
-  color: var(--leaf);
   box-shadow: 0 3px 0 var(--soft-shadow);
 }
-.contact:hover .contact__call {
+.contact__call {
+  color: var(--leaf);
+}
+.contact__call:hover {
   background: var(--leaf-soft);
+}
+.contact__msg {
+  color: var(--denim);
+}
+.contact__msg:hover {
+  background: var(--denim-soft);
 }
 
 .avatar {
@@ -1426,4 +1442,226 @@ input[type="file"] {
 .dish-editor > .btn {
   align-self: flex-start;
   margin-top: 10px;
+}
+
+/* ---------- Messages (looks like SMS on a phone) ---------- */
+
+.sms {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--text);
+  overscroll-behavior: none;
+}
+.sms__head {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 56px 1fr 56px;
+  align-items: center;
+  padding: calc(8px + env(safe-area-inset-top)) 8px 8px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.sms__back {
+  justify-self: start;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: none;
+  color: var(--denim);
+  font-size: 2.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.sms__who {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.sms__who .avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 1.1rem;
+  border-width: 1.5px;
+}
+.sms__call {
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--denim);
+}
+.sms__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 12px 8px;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+}
+.sms__empty {
+  margin: auto;
+  text-align: center;
+  max-width: 26ch;
+}
+.sms__row {
+  display: flex;
+  flex-direction: column;
+}
+.sms__stamp {
+  margin: 12px 0 8px;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.sms__note {
+  margin: 8px 0;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.sms__bubble {
+  max-width: 78%;
+  margin-top: 2px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 1rem;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sms__bubble.is-last {
+  margin-bottom: 6px;
+}
+.sms__bubble--me {
+  align-self: flex-end;
+  background: var(--denim-nav);
+  color: var(--denim-nav-text);
+}
+.sms__bubble--me.is-last {
+  border-bottom-right-radius: 5px;
+}
+.sms__bubble--them {
+  align-self: flex-start;
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+.sms__bubble--them.is-last {
+  border-bottom-left-radius: 5px;
+}
+.sms__bubble.is-failed {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.sms__retry {
+  align-self: flex-end;
+  margin: 0 4px 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--danger);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sms__typing {
+  display: flex;
+  gap: 5px;
+  padding: 13px 14px;
+}
+.sms__typing span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  opacity: 0.5;
+  animation: sms-typing 1.2s infinite ease-in-out;
+}
+.sms__typing span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.sms__typing span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes sms-typing {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+.sms__composer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+.sms--keyboard .sms__composer {
+  padding-bottom: 8px;
+}
+.sms__input {
+  flex: 1;
+  min-width: 0;
+  max-height: 120px;
+  resize: none;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  /* 16px or more, or iOS zooms in when the field is focused */
+  font-size: 1rem;
+  line-height: 1.3;
+}
+.sms__input:focus {
+  outline: 2px solid var(--denim);
+  outline-offset: -1px;
+}
+.sms__send {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 1px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--denim-nav);
+  color: var(--denim-nav-text);
+  cursor: pointer;
+}
+.sms__send:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sms__typing span {
+    animation: none;
+    opacity: 0.7;
+  }
 }

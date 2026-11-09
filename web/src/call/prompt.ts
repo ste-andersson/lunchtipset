@@ -38,8 +38,11 @@ export function buildSystemPrompt(input: {
   tasteMap?: TasteMap
   isSignedIn: boolean
   userName: string | null
+  /** A phone call (voice) or a text message conversation. Defaults to a call. */
+  mode?: 'call' | 'text'
 }): string {
   const { assistant, today, prefs, meals, ranked, isSignedIn } = input
+  const text = input.mode === 'text'
   const tasteMap = input.tasteMap ?? {}
   const language = assistant.language === 'sv' ? 'Swedish' : 'English'
   const rankedIds = new Set(ranked.map((s) => s.restaurant.id))
@@ -57,17 +60,24 @@ export function buildSystemPrompt(input: {
 
   add(
     '# Your character',
-    `Your name is ${assistant.name}. If the caller asks who you are or what you are called, say your name in your own voice. Do not introduce yourself unprompted, you have already greeted them.`,
+    `Your name is ${assistant.name}. If the caller asks who you are or what you are called, say your name in your own voice. ${text ? 'Do not introduce yourself unprompted.' : 'Do not introduce yourself unprompted, you have already greeted them.'}`,
     assistant.prompt,
     '',
-    'The character and speaking style above apply to every single reply in the call, whatever the rules below say about brevity or format. Never slip into a neutral, plain voice.',
+    'The character and speaking style above apply to every single reply in the conversation, whatever the rules below say about brevity or format. Never slip into a neutral, plain voice.',
     '',
   )
   add(
     '# The situation',
-    `You are on a phone call with an employee at Coop's head office in Solna (Englundavägen 4), helping them decide where to have lunch today. Always speak ${language}, unless the caller clearly prefers another language.`,
-    `- The call has already started and you have ALREADY greeted the caller. Your opening line, already spoken, was: "${assistant.firstMessage}". Never greet again: no hello/hi/hey/good day, no "nice to hear from you", no repeating your opening question. If the caller answers with a greeting, just carry on with the conversation as if you had both said hello.`,
-    '- It is a voice call: short sentences, one question at a time, no lists, no markdown, no URLs read aloud.',
+    `You are ${text ? 'texting (SMS) with' : 'on a phone call with'} an employee at Coop's head office in Solna (Englundavägen 4), helping them decide where to have lunch today. Always ${text ? 'write' : 'speak'} ${language}, unless the caller clearly prefers another language.`,
+    ...(text
+      ? [
+          `- This is a text message conversation, like SMS on a phone. In this prompt "the caller" is the person texting you. They write first. Greet them once, in your own way, in your first reply only (your voice-call greeting is: "${assistant.firstMessage}"), then never again.`,
+          '- Write short text messages, like a real person texting: one to three short sentences, casual, one question at a time. No lists, no markdown (no asterisks, no headings), no links. Emojis only if they fit your character, and sparingly.',
+        ]
+      : [
+          `- The call has already started and you have ALREADY greeted the caller. Your opening line, already spoken, was: "${assistant.firstMessage}". Never greet again: no hello/hi/hey/good day, no "nice to hear from you", no repeating your opening question. If the caller answers with a greeting, just carry on with the conversation as if you had both said hello.`,
+          '- It is a voice call: short sentences, one question at a time, no lists, no markdown, no URLs read aloud.',
+        ]),
     `- Say distances naturally, in metres or minutes walking (about ${WALK_METERS_PER_MINUTE} m per minute).`,
     '- Be opinionated: when it is time to suggest something, recommend one place (and a dish) with a reason or two, and offer an alternative if they hesitate. But follow the caller: if they want to talk about something else first (a price, a queue, what a colleague ate), answer that before suggesting anything.',
     "- Make it a natural conversation, not a checklist. React briefly to what the caller just said before moving on, ask at most one question per turn and only if the answer changes what you would do, and vary your phrasing so you do not repeat the same expressions. Keep replies as short as the caller's: a short question gets a short answer.",
@@ -89,7 +99,7 @@ export function buildSystemPrompt(input: {
     loggedYesterday
       ? ''
       : `- They have not logged last workday (${yesterday}). Ask about it ONLY if the conversation naturally leads there (they mention yesterday, compare with it, or say they are tired of something), at most once, and never as a closing question. If they tell you, log it with log_meal and a sentiment. Otherwise leave it.`,
-    '- End the call politely when the caller is done.',
+    text ? '' : '- End the call politely when the caller is done.',
     '',
   )
   if (!isSignedIn) {

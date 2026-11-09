@@ -239,7 +239,10 @@ export const sv = {
   fetchStatus: { ok: 'OK', empty: 'Tom', error: 'Fel' },
   ring: {
     title: 'Ring en lunchassistent',
-    intro: 'Prata med en assistent om dagens luncher. Den vet redan vad du gillar och var du ätit.',
+    intro:
+      'Ring eller skriv till en assistent om dagens luncher. Den vet redan vad du gillar och var du ätit.',
+    message: 'Skriv till {{name}}',
+    callName: 'Ring {{name}}',
     micTitle: 'Innan du ringer',
     micHeadphones:
       'Samtalen fungerar bäst med hörlurar. Annars kan assistenten bli förvirrad av röster i bakgrunden.',
@@ -266,5 +269,15 @@ export const sv = {
     call: 'Ring {{name}}',
     callAgain: 'Ring igen',
     toToday: 'Till dagens luncher',
+  },
+  chat: {
+    placeholder: 'Meddelande',
+    send: 'Skicka',
+    empty: 'Skriv till {{name}} för att få ett lunchtips.',
+    notDelivered: 'Ej levererat. Tryck för att försöka igen.',
+    typing: '{{name}} skriver',
+    today: 'Idag',
+    yesterday: 'Igår',
+    loading: 'Hämtar dagens luncher…',
   },
 }

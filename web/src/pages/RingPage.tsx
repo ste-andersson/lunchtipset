@@ -39,14 +39,35 @@ export function RingPage() {
       {assistants.error && <Notice tone="warn">{t('common.loadError')}</Notice>}
       <div className="contacts">
         {assistants.data?.map((a) => (
-          <Link key={a.id} to={`/ring/${a.id}`} className="contact">
-            <Avatar assistant={a} />
-            <div className="contact__body">
-              <strong>
-                {a.name} <Flag assistant={a} />
-              </strong>
-            </div>
-            <span className="contact__call" aria-hidden>
+          <div key={a.id} className="contact">
+            <Link to={`/ring/${a.id}`} className="contact__main">
+              <Avatar assistant={a} />
+              <div className="contact__body">
+                <strong>
+                  {a.name} <Flag assistant={a} />
+                </strong>
+              </div>
+            </Link>
+            <Link
+              to={`/ring/${a.id}/sms`}
+              className="contact__btn contact__msg"
+              aria-label={t('ring.message', { name: a.name })}
+            >
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path d="M4 3h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8.4l-4.1 3.7A.8.8 0 0 1 3 21.1V5a2 2 0 0 1 1-2z" />
+              </svg>
+            </Link>
+            <Link
+              to={`/ring/${a.id}`}
+              className="contact__btn contact__call"
+              aria-label={t('ring.callName', { name: a.name })}
+            >
               <svg
                 width="22"
                 height="22"
@@ -56,8 +77,8 @@ export function RingPage() {
               >
                 <path d="M6.6 10.8a15.5 15.5 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.25 11.4 11.4 0 0 0 3.6.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.45.57 3.6a1 1 0 0 1-.25 1z" />
               </svg>
-            </span>
-          </Link>
+            </Link>
+          </div>
         ))}
       </div>
       <Sheet open={intro} onClose={() => setIntro(false)} title={t('ring.micTitle')}>

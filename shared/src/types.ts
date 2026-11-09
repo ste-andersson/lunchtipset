@@ -139,7 +139,7 @@ export interface Assistant {
   id: string
   name: string
   language: 'sv' | 'en'
-  flag: 'se' | 'skane' | 'gb' | 'us'
+  flag: 'se' | 'skane' | 'gb' | 'gb1606' | 'us'
   prompt: string
   firstMessage: string
   voiceId: string | null
@@ -198,4 +198,24 @@ export const dishKey = (restaurantId: number, title: string) => `${restaurantId}
 export interface Me {
   userId: string
   isAdmin: boolean
+}
+
+/** One turn of a text chat with an assistant, in the shape Gemini keeps it (so tool calls round-trip). */
+export interface ChatContent {
+  role: 'user' | 'model'
+  parts: Record<string, unknown>[]
+}
+
+export interface ChatToolCall {
+  name: string
+  args: Record<string, unknown>
+}
+
+export interface ChatReply {
+  /** Append this to the history as is. */
+  content: ChatContent
+  /** What the assistant wrote, ready to show. */
+  text: string
+  /** Tools to run in the browser; answer them with a functionResponse turn. */
+  calls: ChatToolCall[]
 }

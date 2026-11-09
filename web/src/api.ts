@@ -4,6 +4,8 @@ import type {
   CallLine,
   CallLog,
   CallLogSummary,
+  ChatContent,
+  ChatReply,
   Me,
   MealLog,
   MenuDay,
@@ -19,7 +21,7 @@ import type {
 
 const TOKEN_TIMEOUT_MS = 4000
 
-type GetToken =() => Promise<string | null>
+type GetToken = () => Promise<string | null>
 
 export class ApiError extends Error {
   constructor(
@@ -82,6 +84,9 @@ export function createApi(getToken: GetToken) {
       send<TasteMap>('POST', '/taste', { date, freeText, meals }),
     restaurants: () => get<Restaurant[]>('/restaurants'),
     assistants: () => get<Assistant[]>('/assistants'),
+    /** One assistant reply in a text chat; the browser keeps the history and runs the tools. */
+    chat: (assistantId: string, system: string, contents: ChatContent[]) =>
+      send<ChatReply>('POST', '/chat', { assistantId, system, contents }),
     signedUrl: (assistantId: string) =>
       send<{ signedUrl: string }>('POST', '/conversation/signed-url', { assistantId }),
 

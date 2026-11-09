@@ -29,6 +29,7 @@ import {
   restaurants,
 } from '../db/schema.ts'
 import { env } from '../env.ts'
+import { chatTurn } from '../menus/chat.ts'
 import { tasteFor } from '../menus/taste.ts'
 import { authors } from '../users.ts'
 import { agentIdFor } from '../voice/syncAgents.ts'
@@ -262,6 +263,47 @@ publicRoutes.post('/conversation/signed-url', async (c) => {
   }
   const { signed_url } = (await res.json()) as { signed_url: string }
   return c.json({ signedUrl: signed_url })
+})
+
+const CHAT_MAX_CONTENTS = 80
+const CHAT_MAX_BYTES = 300_000
+
+/**
+ * One reply in a text conversation. The browser builds the system prompt (it has the
+ * guest's preferences) and keeps the history, so this is a thin pass to Gemini.
+ */
+publicRoutes.post('/chat', async (c) => {
+  const body = await parseJson(
+    c,
+    z.object({
+      assistantId: z.string(),
+      system: z.string().min(1).max(60_000),
+      contents: z
+        .array(
+          z.object({
+            role: z.enum(['user', 'model']),
+            parts: z.array(z.record(z.string(), z.unknown())).min(1).max(12),
+          }),
+        )
+        .min(1)
+        .max(CHAT_MAX_CONTENTS),
+    }),
+  )
+  if (!assistants.some((a) => a.id === body.assistantId)) {
+    throw new HTTPException(404, { message: 'Okänd assistent' })
+  }
+  if (JSON.stringify(body.contents).length > CHAT_MAX_BYTES) {
+    throw new HTTPException(413, { message: 'Konversationen är för lång' })
+  }
+  if (!env.GEMINI_API_KEY) {
+    throw new HTTPException(503, { message: 'Meddelanden är inte konfigurerade' })
+  }
+  try {
+    return c.json(await chatTurn(body.system, body.contents))
+  } catch (err) {
+    console.error('Chat failed', err)
+    throw new HTTPException(502, { message: 'Assistenten kunde inte svara' })
+  }
 })
 
 /** Saved when a call ends so admins can read what was said. Guests can call too. */

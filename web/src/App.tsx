@@ -5,6 +5,7 @@ import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-rou
 import { useAppAuth } from './auth.tsx'
 import { WelcomeSheet } from './components/WelcomeSheet.tsx'
 import { useMe, useToday } from './data.ts'
+import { ChatPage } from './pages/ChatPage.tsx'
 import { ContributePage } from './pages/ContributePage.tsx'
 import { HistoryPage } from './pages/HistoryPage.tsx'
 import { PreferencesPage } from './pages/PreferencesPage.tsx'
@@ -20,7 +21,7 @@ const AdminPage = lazy(() =>
 
 export function App() {
   const { pathname } = useLocation()
-  // The call screen takes over the whole viewport, like a phone call.
+  // The call and message screens take over the whole viewport, like on a phone.
   const inCall = pathname.startsWith('/ring/')
 
   return (
@@ -32,6 +33,7 @@ export function App() {
             <Route path="/" element={<TodayPage />} />
             <Route path="/ring" element={<RingPage />} />
             <Route path="/ring/:assistantId" element={<CallPage />} />
+            <Route path="/ring/:assistantId/sms" element={<ChatPage />} />
             <Route path="/installningar" element={<SettingsLayout />}>
               <Route index element={<PreferencesPage />} />
               <Route path="historik" element={<HistoryPage />} />
