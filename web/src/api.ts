@@ -17,7 +17,9 @@ import type {
   TodayResponse,
 } from '@lunch/shared'
 
-type GetToken = () => Promise<string | null>
+const TOKEN_TIMEOUT_MS = 4000
+
+type GetToken =() => Promise<string | null>
 
 export class ApiError extends Error {
   constructor(
@@ -35,7 +37,13 @@ async function request<T>(
   body?: unknown,
   keepalive = false,
 ): Promise<T> {
-  const token = await getToken()
+  // In an iOS home-screen web app Clerk can fail to load and getToken() then never
+  // settles, which would leave every request (and the page) waiting forever. Give up
+  // after a moment and go on as a guest.
+  const token = await Promise.race([
+    getToken().catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), TOKEN_TIMEOUT_MS)),
+  ])
   const headers: Record<string, string> = {}
   if (token) headers.Authorization = `Bearer ${token}`
   let payload: BodyInit | undefined
