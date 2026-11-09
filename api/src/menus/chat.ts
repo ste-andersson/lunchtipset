@@ -25,8 +25,8 @@ export async function chatTurn(system: string, contents: ChatContent[]): Promise
       systemInstruction: system,
       tools: [{ functionDeclarations }],
       temperature: 1,
-      // Texting should feel quick; flash models can skip the thinking step.
-      ...(env.GEMINI_MODEL.includes('flash') ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
+      // A little thinking is what makes it actually read the menus before answering.
+      ...(env.GEMINI_MODEL.includes('flash') ? { thinkingConfig: { thinkingBudget: 1024 } } : {}),
     },
   })
 

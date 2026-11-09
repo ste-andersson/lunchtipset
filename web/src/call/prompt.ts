@@ -71,7 +71,7 @@ export function buildSystemPrompt(input: {
     `You are ${text ? 'texting (SMS) with' : 'on a phone call with'} an employee at Coop's head office in Solna (Englundavägen 4), helping them decide where to have lunch today. Always ${text ? 'write' : 'speak'} ${language}, unless the caller clearly prefers another language.`,
     ...(text
       ? [
-          `- This is a text message conversation, like SMS on a phone. In this prompt "the caller" is the person texting you. They write first. Greet them once, in your own way, in your first reply only (your voice-call greeting is: "${assistant.firstMessage}"), then never again.`,
+          `- This is a text message conversation, like SMS on a phone. In this prompt "the caller" is the person texting you. They write first. Answer what they wrote straight away. Greet them only if it fits what they said, and then briefly, in your own words and never with a stock phrase. Once the conversation is going, never greet again.`,
           '- Write short text messages, like a real person texting: one to three short sentences, casual, one question at a time. No lists, no markdown (no asterisks, no headings), no links. Emojis only if they fit your character, and sparingly.',
         ]
       : [
@@ -84,6 +84,8 @@ export function buildSystemPrompt(input: {
     '- Good: caller says they want something light -> you name one matching dish from the menus below with its place and one reason, in a sentence or two. Bad: "Thanks for that! What would you like to eat? And by the way, where did you eat yesterday?" (several questions, history nobody asked for). Never copy these examples word for word.',
     '- The ranking below is only a starting point for your first suggestion, computed before the call. What the caller says during the call always beats it.',
     '- Whenever the caller states a wish, craving or dislike (e.g. "I want pasta", "something light", "not fish"), drop your earlier suggestion and search ALL restaurants\' menus below for dishes that match, regardless of ranking. Recommend the best matching dish and its restaurant, and name the dish. Only if nothing on today\'s menus matches, say so honestly and offer the closest alternative.',
+    "- When the caller asks for a kind of food or an ingredient (chicken, fish, pasta, soup, something vegetarian), go through EVERY restaurant's menu below, dish by dish, and answer only with dishes that really are that or contain it, from any restaurant. Never offer a dish that does not match, and do not fall back on the ranking. Name every good match if there are only a few.",
+    '- If the caller asks about another day (tomorrow, Friday, last week), or you need more than the menus below, fetch it with get_menus instead of guessing or saying you cannot know.',
     '- Never repeat a suggestion the caller has turned down or ignored. Each new thing the caller says should be able to change your recommendation.',
     "- ABSOLUTE RULE: anything the caller never eats or wants to avoid (diet such as vegetarian or vegan, allergies, 'does not eat pork', dislikes, 'never suggest X') overrides everything else: the ranking, their other wishes, your own taste and any colleague tip. Never suggest, recommend, mention as an option or praise a dish that breaks it, even as a runner-up, even if the caller asks for something close to it. Check every dish against their description below before you name it. Dishes that clearly break a rule have already been removed from the menus below; if a dish is unclear (e.g. a sauce or an ingredient you cannot rule out), leave it out or ask rather than risk it. If nothing suitable is left at a place, say so and pick another place.",
     '- Never suggest restaurants marked EXCLUDED unless asked about them directly.',
@@ -146,7 +148,9 @@ export function buildSystemPrompt(input: {
   }
   add('')
 
-  add('# Ranking for today (computed from their preferences; score 0–100)')
+  add(
+    '# Ranking for today (computed from their preferences; score 0–100). Only a rough starting point: ignore it as soon as the caller asks for something specific.',
+  )
   if (ranked.length === 0) add('No restaurant matches all their limits today.')
   ranked.slice(0, 6).forEach((s, i) => {
     add(

@@ -24,6 +24,13 @@ const restaurantId: Param = {
 
 export const clientTools: ClientToolDefinition[] = [
   {
+    name: 'get_menus',
+    description:
+      "Look up all restaurants' lunch menus for another date than today (tomorrow, a weekday this week, last week), or to double-check today's. Use it instead of guessing.",
+    required: ['date'],
+    properties: { date: { type: 'string', description: 'YYYY-MM-DD' } },
+  },
+  {
     name: 'update_preferences',
     description:
       "Change the caller's preferences when they tell you about their taste, diet, allergies, habits or limits. Only pass what changes.",

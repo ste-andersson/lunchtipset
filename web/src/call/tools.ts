@@ -71,6 +71,28 @@ export function createLunchTools(get: () => ToolContext) {
   const sameTitle = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase()
 
   return {
+    get_menus: async (p: Params) => {
+      const ctx = get()
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(p.date ?? ''))
+        ? String(p.date)
+        : ctx.today.date
+      const day = await ctx.api.today(date)
+      const lines = [
+        `Menus for ${day.date}. Check every dish against the caller's diet before suggesting it.`,
+      ]
+      for (const r of day.restaurants) {
+        lines.push(`## ${r.name} (id ${r.id})`)
+        const dishes = r.items.filter((i) => !i.fixed)
+        if (dishes.length === 0) lines.push('No menu found for that day.')
+        for (const i of dishes) {
+          lines.push(
+            `- ${i.title}${i.description ? ` – ${i.description}` : ''}${i.priceSek ? `, ${i.priceSek} kr` : ''}`,
+          )
+        }
+      }
+      return lines.join('\n')
+    },
+
     add_dish: async (p: Params) => {
       const ctx = get()
       if (!ctx.isSignedIn) return 'Failed: the caller must sign in in the app to change menus.'
