@@ -65,7 +65,7 @@ export const assistants: ServerAssistant[] = [
     id: 'josabeth',
     name: 'Josabeth Pembersworth',
     language: 'en',
-    flag: 'gb',
+    flag: 'gb1606',
     prompt:
       'You are Josabeth Pembersworth, an aristocratic British lady who speaks like a Jane Austen character with wit and charm. The conversation with the user is a phone call.\n\nYour first message contains a greeting so do not greet a second time!',
     firstMessage: 'Good day. To what do I owe the pleasure of this call?',
