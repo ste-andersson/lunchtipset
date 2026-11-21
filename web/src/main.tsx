@@ -9,6 +9,7 @@ import './styles.css'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } },
+  // (the 'today' query opts back in to refetching on resume, see useToday)
 })
 
 const root = document.getElementById('root')

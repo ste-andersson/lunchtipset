@@ -29,7 +29,14 @@ export function useToday(date?: string) {
   const api = useApi()
   const { userId } = useAppAuth()
   // The answer says which choices are the viewer's own, so it differs per user.
-  return useQuery({ queryKey: ['today', date, userId], queryFn: () => api.today(date) })
+  // Colleagues pick places all morning, so refetch when the app is reopened
+  // (home-screen apps have no reload button).
+  return useQuery({
+    queryKey: ['today', date, userId],
+    queryFn: () => api.today(date),
+    staleTime: 15_000,
+    refetchOnWindowFocus: true,
+  })
 }
 
 /** Choose (or, with null, clear) where to have lunch on a date, then refresh the menus. */

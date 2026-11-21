@@ -45,6 +45,7 @@ export const en: Shape<typeof sv> = {
   common: {
     loading: 'Loading…',
     loadError: 'Could not load data. Try again in a moment.',
+    refresh: 'Refresh',
     cancel: 'Cancel',
     save: 'Save',
     saved: 'Saved',

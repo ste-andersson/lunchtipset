@@ -41,6 +41,7 @@ export const sv = {
   common: {
     loading: 'Laddar…',
     loadError: 'Kunde inte hämta data. Försök igen om en stund.',
+    refresh: 'Uppdatera',
     cancel: 'Avbryt',
     save: 'Spara',
     saved: 'Sparat',

@@ -278,6 +278,20 @@ a {
   display: flex;
   gap: 6px;
 }
+.cloth__refresh {
+  display: inline-block;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.cloth__btn.is-spinning .cloth__refresh {
+  animation: cloth-spin 0.8s linear infinite;
+}
+@keyframes cloth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .cloth__btn {
   min-width: 36px;
   min-height: 36px;
@@ -1616,7 +1630,8 @@ input[type="file"] {
   display: flex;
   align-items: flex-end;
   gap: 8px;
-  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  /* Keep the bar full width but line the field up with the message list (max 760px) */
+  padding: 8px max(12px, calc((100% - 760px) / 2 + 12px)) calc(8px + env(safe-area-inset-bottom));
   background: var(--surface);
   border-top: 1px solid var(--border);
 }

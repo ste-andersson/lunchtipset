@@ -1,5 +1,5 @@
 import { isoDate } from '@lunch/shared'
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router'
 import { useAppAuth } from './auth.tsx'
@@ -50,6 +50,32 @@ export function App() {
   )
 }
 
+/** Standalone (home-screen) apps have no browser pull-to-refresh, so offer our own. */
+function usePullToRefresh(onRefresh: () => unknown, enabled: boolean) {
+  const cb = useRef(onRefresh)
+  cb.current = onRefresh
+  useEffect(() => {
+    if (!enabled) return
+    let startY: number | null = null
+    const start = (e: TouchEvent) => {
+      startY = window.scrollY <= 0 ? (e.touches[0]?.clientY ?? null) : null
+    }
+    const end = (e: TouchEvent) => {
+      const endY = e.changedTouches[0]?.clientY
+      if (startY !== null && endY !== undefined && endY - startY > 90 && window.scrollY <= 0) {
+        cb.current()
+      }
+      startY = null
+    }
+    window.addEventListener('touchstart', start, { passive: true })
+    window.addEventListener('touchend', end, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', start)
+      window.removeEventListener('touchend', end)
+    }
+  }, [enabled])
+}
+
 /** The gingham tablecloth with a label: logo and the lunch date, on every page. */
 function TopBar() {
   const { t, i18n } = useTranslation()
@@ -62,10 +88,26 @@ function TopBar() {
     i18n.language,
     { weekday: 'long', day: 'numeric', month: 'long' },
   )
+  const { pathname } = useLocation()
+  const refresh = () => today.refetch()
+  usePullToRefresh(refresh, pathname === '/')
 
   return (
     <header className="cloth">
       <div className="cloth__corner">
+        {pathname === '/' && (
+          <button
+            type="button"
+            className={`cloth__btn ${today.isFetching ? 'is-spinning' : ''}`}
+            onClick={refresh}
+            aria-label={t('common.refresh')}
+            title={t('common.refresh')}
+          >
+            <span className="cloth__refresh" aria-hidden>
+              ↻
+            </span>
+          </button>
+        )}
         <button
           type="button"
           className="cloth__btn"
